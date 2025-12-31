@@ -5,52 +5,10 @@
 #4. for search, just execute each source's search function, same with status check
 #5. return all results in a list
 
-
-
-
-
-class source:
-
-    def __init__(self):
-        print("Initializing...")
-
-    def check_status(url):
-        #ping url for health check
-        #do test queries for information
-        pass
-
-
-class ThePirateBay(source):
-
-    def __init__(self):
-        SELF.url = "Thepiratebay.com"
-
-    def search(self, query):
-        #Check status
-        #parse using beautiful soup
-        #return info back to list
-        pass
-
-
-
-    def check_status(self):
-        Super().check_status(SELF.url)
-
-
-
-
-
-
-def search(query):
-    pass
-
-def statusCheck():
-    pass
-
-
-
-
-
+import requests
+import re
+from sources.thepiratebay import ThePirateBay
+from bs4 import BeautifulSoup   
 
 
 
@@ -60,7 +18,12 @@ def main():
         choice = input("Select an option: ")
         if choice == '1':
             choice = input("Enter query:")
-            search(choice)
+
+            tpb = ThePirateBay()
+            results = tpb.search(choice)
+            print(results)
+
+
         elif choice == '2':
             print("Performing status check...")
 
