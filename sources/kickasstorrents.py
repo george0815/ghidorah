@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 class KickAssTorrents:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self):
+    def __init__(self, limit):
         self.urls = [
             "https://kickasstorrents.id",
             "https://kickasstorrents.to",
@@ -12,7 +12,7 @@ class KickAssTorrents:
             "https://kick4ss.com",
             "https://kickass.torrentsbay.org",
         ]
-        self.LIMIT = 50
+        self.LIMIT = limit
         self.session = requests.Session()
 
     def search(self, query) -> dict:
@@ -50,9 +50,8 @@ class KickAssTorrents:
                 if name:
                     size = row_data[1].text.strip()
                     seeders = row_data[4].text.strip()
-                    # leechers = row_data[5].text.strip()
-                    uploader = row_data[2].text.strip()
-                    date = row_data[3].text.strip()
+                    leechers = row_data[3].text.strip()
+                    date = row_data[2].text.strip()
 
                     result["data"].append(
                         {
@@ -60,9 +59,8 @@ class KickAssTorrents:
                             "size": size,
                             "date": date,
                             "seeders": seeders,
-                            # "leechers": leechers,
+                            "leechers": leechers,
                             "url": torUrl,
-                            "uploader": uploader,
                         }
                     )
 
