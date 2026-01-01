@@ -12,9 +12,7 @@ from sources.kickasstorrents import KickAssTorrents
 from sources.limetorrents import LimeTorrents
 from sources.yts import YTS
 from sources.x1337 import X1337
-from sources.torrentfunk import TorrentFunk
 from sources.torrentgalaxy import TorrentGalaxy
-from sources.torrentproject import TorrentProject
 from bs4 import BeautifulSoup   
 from tabulate import tabulate
 import InquirerPy
@@ -31,7 +29,7 @@ def main():
         if choice == '1':
             choice = input("Enter query:")
 
-            tpb = TorrentGalaxy()
+            tpb = KickAssTorrents()
             results = tpb.search(choice)
             print(results)
             rows = []

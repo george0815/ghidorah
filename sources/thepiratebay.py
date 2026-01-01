@@ -4,48 +4,50 @@ from bs4 import BeautifulSoup
 
 class ThePirateBay:
 
-
-    #Mainly just initializes the urls to be used for searching
+    # Mainly just initializes the urls to be used for searching
     def __init__(self):
-        
-        self.urls = ["https://thepiratebay10.org", "https://tpb.party", "https://pirateproxylive.org"]
-
+        self.urls = [
+            "https://thepiratebay10.org",
+            "https://tpb.party",
+            "https://pirateproxylive.org",
+            "https://thepiratebay11.com",
+            "https://thepiratebay.zone"
+        ]
+        self.LIMIT = 50
 
     def search(self, query) -> dict:
-        
-        #status check to be implemented
-        self.check_status(self.urls)
-       
-        #for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
-        my_dict = {"data": []}
+
+        # for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
+        result = {"data": []}
         for url in self.urls:
-            
-            finalUrl = url + "/search/{}/{}/99/0".format(query, '1')
+
+            finalUrl = url + "/search/{}/1/99/0".format(query)
             print("FINAL URL:", finalUrl)
 
             headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-            }       
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+            }
 
-            #response
+            # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)  
+            print("STATUS:", res.status_code)
             if res.status_code != 200:
                 continue
+
             self.soup = BeautifulSoup(res.content, "html.parser")
 
-          
-            #actually parse the data, find the table rows ("[1:]" skips header row)
+            # actually parse the data, find the table rows
             for table_row in self.soup.find_all("tr")[1:]:
-
                 row_data = table_row.find_all("td")
                 try:
                     name = row_data[1].find("a").text
                 except:
                     name = None
-                #parse acutal torrent data
+
+                # parse actual torrent data
                 if name:
                     url = row_data[1].find("a")["href"]
                     magnet = row_data[3].find_all("a")[0]["href"]
@@ -56,7 +58,7 @@ class ThePirateBay:
                     uploader = row_data[7].text
                     dateUploaded = row_data[2].text
 
-                    my_dict["data"].append(
+                    result["data"].append(
                         {
                             "name": name,
                             "size": size,
@@ -72,37 +74,14 @@ class ThePirateBay:
                             "magnet": magnet,
                         }
                     )
-                if len(my_dict["data"]) == 100:
+
+                if len(result["data"]) == self.LIMIT:
                     break
 
-            #gets pagination info (current page number and total pages available)        
-            if len(self.soup.find_all("tr")) >= 1:
-                last_table_row = self.soup.find_all("tr")[-1]
-                potential_page_link = last_table_row.find("td").find("a").href
-                check_if_pagination_available = potential_page_link is not None and potential_page_link[:len("/search/")] == "/search/"
-                if check_if_pagination_available:
-                    current_page = last_table_row.find("td").find("b").text
-                    my_dict["current_page"] = int(current_page)
-                    my_dict["total_pages"] = int(
-                        last_table_row.find("td").find_all("a")[-2].text
-                    )
+           
 
-            print(len(my_dict["data"]))
-            if len(my_dict["data"]) > 0:
+            print(len(result["data"]))
+            if len(result["data"]) > 0:
                 break
-            
-        return my_dict
 
-
-    def check_status(self, urls) -> bool:
-        for url in urls:
-            try:
-                response = requests.get(url, timeout=10)
-                if response.status_code == 200:
-                    return True
-            except requests.RequestException:
-                continue
-        return False
-
-
-
+        return result

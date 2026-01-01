@@ -4,56 +4,57 @@ from bs4 import BeautifulSoup
 
 class X1337:
 
-
-    #Mainly just initializes the urls to be used for searching
+    # Mainly just initializes the urls to be used for searching
     def __init__(self):
-        
-        self.urls = ["https://1337x.pro"]
-        self.LIMIT = 50 
-
+        self.urls = [
+            "https://1337x.pro",
+            "https://1337x.st",
+            "https://www.1377x.is",
+            "https://1337x.proxyninja.net/",
+            "https://1337x.unblockninja.com"]
+        self.LIMIT = 50
 
     def search(self, query) -> dict:
-        
-        #status check to be implemented
-        self.check_status(self.urls)
-       
-        #for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
-        my_dict = {"data": []}
+
+        # for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
+        result = {"data": []}
         list_of_urls = []
+
         for url in self.urls:
-            
             finalUrl = url + "/search/?q={}".format(query)
             print("FINAL URL:", finalUrl)
 
             headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-            }       
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+            }
 
-            #response
+            # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)  
+            print("STATUS:", res.status_code)
             if res.status_code != 200:
                 continue
+
             self.soup = BeautifulSoup(res.content, "html.parser")
 
-          
-            #actually parse the data, find the table rows ("[1:]" skips header row)
-            trs = self.soup.select("tbody tr")
-            for tr in trs:
-                td = tr.find_all("td")
-                name = td[0].find_all("a")[-1].text
-                if name:
-                    torUrl = url + td[0].find_all("a")[-1]["href"]
-                    list_of_urls.append(url)
-                    seeders = td[1].text
-                    leechers = td[2].text
-                    date = td[3].text
-                    size = td[4].text.replace(seeders, "")
-                    #uploader = td[5].find("a").text
+            # actually parse the data, find the table rows
+            table_rows = self.soup.select("tbody tr")
+            for tr in table_rows:
+                row_data = tr.find_all("td")
+                name = row_data[0].find_all("a")[-1].text
 
-                    my_dict["data"].append(
+                if name:
+                    torUrl = url + row_data[0].find_all("a")[-1]["href"]
+                    list_of_urls.append(url)
+                    seeders = row_data[1].text
+                    leechers = row_data[2].text
+                    date = row_data[3].text
+                    size = row_data[4].text.replace(seeders, "")
+                    # uploader = row_data[5].find("a").text
+
+                    result["data"].append(
                         {
                             "name": name,
                             "size": size,
@@ -61,34 +62,16 @@ class X1337:
                             "seeders": seeders,
                             "leechers": leechers,
                             "url": url,
-                            #"uploader": uploader,
+                            # "uploader": uploader,
                         }
                     )
-                if len(my_dict["data"]) == self.LIMIT:
+
+                if len(result["data"]) == self.LIMIT:
                     break
-            try:
-                pages = self.soup.select(".pagination li a")
-                my_dict["current_page"] = int(pages[0].text)
-                tpages = pages[-1].text
-                if tpages == ">>":
-                    my_dict["total_pages"] = int(pages[-2].text)
-                else:
-                    my_dict["total_pages"] = int(pages[-1].text)
-            except:
-                ...
-            
-        return my_dict
 
+            print(len(result["data"]))
+            if len(result["data"]) > 0:
+                break
 
-    def check_status(self, urls) -> bool:
-        for url in urls:
-            try:
-                response = requests.get(url, timeout=10)
-                if response.status_code == 200:
-                    return True
-            except requests.RequestException:
-                continue
-        return False
-
-
+        return result
 
