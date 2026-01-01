@@ -9,6 +9,7 @@ class TorrentProject:
     def __init__(self):
         
         self.urls = ["https://torrentproject.cc"]
+        self.LIMIT = 50
 
 
     def search(self, query) -> dict:
@@ -39,10 +40,10 @@ class TorrentProject:
 
           
             #actually parse the data, find the table rows ("[1:]" skips header row)
-            for div in soup.select("div#similarfiles div")[2:]:
+            for div in self.soup.select("div#similarfiles div")[2:]:
                 span = div.find_all("span")
                 name = span[0].find("a").text
-                url = self.BASE_URL + span[0].find("a")["href"]
+                torUrl = url + span[0].find("a")["href"]
                 list_of_urls.append(url)
                 seeders = span[2].text
                 leechers = span[3].text
@@ -56,13 +57,13 @@ class TorrentProject:
                         "date": date,
                         "seeders": seeders,
                         "leechers": leechers,
-                        "url": url,
+                        "url": torUrl,
                     }
                 )
                 if len(my_dict["data"]) == self.LIMIT:
                     break
             
-        return my_dict, list_of_urls
+        return my_dict
 
 
     def check_status(self, urls) -> bool:

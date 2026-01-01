@@ -9,6 +9,7 @@ class TorrentFunk:
     def __init__(self):
         
         self.urls = ["https://www.torrentfunk.com"]
+        self.LIMIT = 50 
 
 
     def search(self, query) -> dict:
@@ -39,31 +40,31 @@ class TorrentFunk:
 
           
             #actually parse the data, find the table rows ("[1:]" skips header row)
-            for tr in soup.select(".tmain tr")[idx:]:
-                    td = tr.find_all("td")
-                    if len(td) == 0:
-                        continue
-                    name = td[0].find("a").text
-                    date = td[1].text
-                    size = td[2].text
-                    seeders = td[3].text
-                    leechers = td[4].text
-                    uploader = td[5].text
-                    url = self.BASE_URL + td[0].find("a")["href"]
-                    list_of_urls.append(url)
-                    my_dict["data"].append(
-                        {
-                            "name": name,
-                            "size": size,
-                            "date": date,
-                            "seeders": seeders,
-                            "leechers": leechers,
-                            "uploader": uploader if uploader else None,
-                            "url": url,
-                        }
-                    )
-                    if len(my_dict["data"]) == self.LIMIT:
-                        break
+            for tr in self.soup.select(".tmain tr")[1:]:
+                td = tr.find_all("td")
+                if len(td) == 0:
+                    continue
+                name = td[0].find("a").text
+                date = td[1].text
+                size = td[2].text
+                seeders = td[3].text
+                leechers = td[4].text
+                uploader = td[5].text
+                url = url + td[0].find("a")["href"]
+                list_of_urls.append(url)
+                my_dict["data"].append(
+                    {
+                        "name": name,
+                        "size": size,
+                        "date": date,
+                        "seeders": seeders,
+                        "leechers": leechers,
+                        "uploader": uploader if uploader else None,
+                        "url": url,
+                    }
+                )
+                if len(my_dict["data"]) == self.LIMIT:
+                    break
             
         return my_dict, list_of_urls
 

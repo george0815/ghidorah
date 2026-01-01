@@ -1,6 +1,7 @@
 import requests
 import re
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 class KickAssTorrents:
 
@@ -9,29 +10,33 @@ class KickAssTorrents:
     def __init__(self):
         
         self.urls = ["https://kickasstorrents.to"]
+        self.LIMIT = 50
 
 
     def search(self, query) -> dict:
         
-        #status check to be implemented
-        self.check_status(self.urls)
-       
+    
         #for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
         my_dict = {"data": []}
         list_of_urls = []
         for url in self.urls:
             
-            finalUrl = url + "/usearch/{}/{}/".format(query, "1")
+            finalUrl = f"{url}/usearch/{quote(query)}/1/"
+
             print("FINAL URL:", finalUrl)
 
             headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-            }       
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://kickasstorrents.to/",
+                "Connection": "keep-alive",
+            }    
 
             #response
-            res = requests.get(finalUrl, headers=headers, timeout=15)
+            session = requests.Session()
+            session.headers.update(headers)
+            res = session.get(finalUrl, timeout=15)
             print("STATUS:", res.status_code)  
             if res.status_code != 200:
                 continue
@@ -42,7 +47,7 @@ class KickAssTorrents:
             for tr in self.soup.select("tr.odd,tr.even"):
                 td = tr.find_all("td")
                 name = tr.find("a", class_="cellMainLink").text.strip()
-                url = self.BASE_URL + tr.find("a", class_="cellMainLink")["href"]
+                url = url + tr.find("a", class_="cellMainLink")["href"]
                 list_of_urls.append(url)
                 if name:
                     size = td[1].text.strip()
@@ -76,7 +81,7 @@ class KickAssTorrents:
             except:
                 ...
             
-        return my_dict, list_of_urls
+        return my_dict
 
 
     def check_status(self, urls) -> bool:

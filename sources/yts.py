@@ -2,13 +2,13 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
-class LimeTorrents:
+class YTS:
 
 
     #Mainly just initializes the urls to be used for searching
     def __init__(self):
         
-        self.urls = ["https://www.limetorrents.cc"]
+        self.urls = ["https://yts.do"]
         self.LIMIT = 50
 
 
@@ -19,10 +19,9 @@ class LimeTorrents:
        
         #for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
         my_dict = {"data": []}
-        list_of_urls = []
         for url in self.urls:
             
-            finalUrl = url + "/search/all/{}//{}".format(query, "1")
+            finalUrl = url + "/browse-movies/{}/all/all/0/0/latest".format(query)
             print("FINAL URL:", finalUrl)
 
             headers = {
@@ -40,40 +39,28 @@ class LimeTorrents:
 
           
             #actually parse the data, find the table rows ("[1:]" skips header row)
-            for tr in self.soup.find_all("tr")[0:]:
-                td = tr.find_all("td")
-                if len(td) == 0:
-                    continue
-                name = td[0].get_text(strip=True)
-                url = url + td[0].find_all("a")[-1]["href"]
-                list_of_urls.append(url)
-                added_on_and_category = td[1].get_text(strip=True)
-                date = (added_on_and_category.split("-")[0]).strip()
-                category = (added_on_and_category.split("in")[-1]).strip()
-                size = td[2].text
-                seeders = td[3].text
-                #leechers = td[4].text
-                my_dict["data"].append(
-                    {
-                        "name": name,
-                        "size": size,
-                        "date": date,
-                        "category": category if category != date else None,
-                        "seeders": seeders,
-                        #"leechers": leechers,
-                        "url": url,
-                    }
-                )
+            for div in self.soup.find_all("div", class_="browse-movie-wrap"):
+                url = div.find("a")["href"]
+                my_dict["data"].append({"url": url})
                 if len(my_dict["data"]) == self.LIMIT:
                     break
             try:
-                div = self.soup.find("div", class_="search_stat")
-                current_page = int(div.find("span", class_="active").text)
-                total_page = int((div.find_all("a"))[-2].text)
-                if current_page > total_page:
-                    total_page = current_page
-                my_dict["current_page"] = current_page
-                my_dict["total_pages"] = total_page
+                ul = self.soup.find("ul", class_="tsc_pagination")
+                current_page = ul.find("a", class_="current").text
+                my_dict["current_page"] = int(current_page)
+                if current_page:
+                    total_results = self.soup.select_one(
+                        "body > div.main-content > div.browse-content > div > h2 > b"
+                    ).text
+                    if "," in total_results:
+                        total_results = total_results.replace(",", "")
+                    total_page = int(total_results) / 20
+                    my_dict["total_pages"] = (
+                        int(total_page) + 1
+                        if type(total_page) == float
+                        else int(total_page)
+                    )
+
             except:
                 ...
             

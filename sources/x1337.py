@@ -9,6 +9,7 @@ class X1337:
     def __init__(self):
         
         self.urls = ["https://1337x.pro"]
+        self.LIMIT = 50 
 
 
     def search(self, query) -> dict:
@@ -21,7 +22,7 @@ class X1337:
         list_of_urls = []
         for url in self.urls:
             
-            finalUrl = url + "/search/{}/{}/".format(query, "1")
+            finalUrl = url + "/search/?q={}".format(query)
             print("FINAL URL:", finalUrl)
 
             headers = {
@@ -39,17 +40,18 @@ class X1337:
 
           
             #actually parse the data, find the table rows ("[1:]" skips header row)
+            trs = self.soup.select("tbody tr")
             for tr in trs:
                 td = tr.find_all("td")
                 name = td[0].find_all("a")[-1].text
                 if name:
-                    url = self.BASE_URL + td[0].find_all("a")[-1]["href"]
+                    torUrl = url + td[0].find_all("a")[-1]["href"]
                     list_of_urls.append(url)
                     seeders = td[1].text
                     leechers = td[2].text
                     date = td[3].text
                     size = td[4].text.replace(seeders, "")
-                    uploader = td[5].find("a").text
+                    #uploader = td[5].find("a").text
 
                     my_dict["data"].append(
                         {
@@ -59,13 +61,13 @@ class X1337:
                             "seeders": seeders,
                             "leechers": leechers,
                             "url": url,
-                            "uploader": uploader,
+                            #"uploader": uploader,
                         }
                     )
                 if len(my_dict["data"]) == self.LIMIT:
                     break
             try:
-                pages = soup.select(".pagination li a")
+                pages = self.soup.select(".pagination li a")
                 my_dict["current_page"] = int(pages[0].text)
                 tpages = pages[-1].text
                 if tpages == ">>":
@@ -75,7 +77,7 @@ class X1337:
             except:
                 ...
             
-        return my_dict, list_of_urls
+        return my_dict
 
 
     def check_status(self, urls) -> bool:

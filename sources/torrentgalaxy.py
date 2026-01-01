@@ -8,7 +8,8 @@ class TorrentGalaxy:
     #Mainly just initializes the urls to be used for searching
     def __init__(self):
         
-        self.urls = ["https://torrentgalaxy.hair"]
+        self.urls = ["https://torrentgalaxy.one"]
+        self.LIMIT = 50
 
 
     def search(self, query) -> dict:
@@ -20,7 +21,7 @@ class TorrentGalaxy:
         my_dict = {"data": []}
         for url in self.urls:
             
-            finalUrl = url + "/torrents.php?search=+{}&sort=seeders&order=desc&page={}".format(query, "0")
+            finalUrl = url + "/get-posts/keywords:{}".format(query)
             print("FINAL URL:", finalUrl)
 
             headers = {
@@ -31,14 +32,15 @@ class TorrentGalaxy:
 
             #response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)  
+            print("STATUS:", res.status_code)
+            print(res.text)  
             if res.status_code != 200:
                 continue
             self.soup = BeautifulSoup(res.content, "html.parser")
 
           
             #actually parse the data, find the table rows ("[1:]" skips header row)
-            for idx, divs in enumerate(soup.find_all("div", class_="tgxtablerow")):
+            for idx, divs in enumerate(self.soup.find_all("div", class_="tgxtablerow")):
                 div = divs.find_all("div")
                 try:
                     name = div[4].find("a").get_text(strip=True)
@@ -54,13 +56,13 @@ class TorrentGalaxy:
                     except:
                         magnet = div[3].find_all("a")[1]["href"]
                         torrent = div[3].find_all("a")[0]["href"]
-                    size = soup.select("span.badge.badge-secondary.txlight")[
+                    size = self.soup.select("span.badge.badge-secondary.txlight")[
                         idx
                     ].text
                     try:
-                        url = div[4].find("a")["href"]
+                        torUrl = div[4].find("a")["href"]
                     except:
-                        url = div[1].find("a", class_="txlight")["href"]
+                        torUrl = div[1].find("a", class_="txlight")["href"]
                     try:
                         date = div[12].get_text(strip=True)
                     except:
@@ -92,22 +94,20 @@ class TorrentGalaxy:
                             "category": category,
                             "uploader": uploader,
                             "imdb_id": imdb_url.split("=")[-1],
-                            "hash": re.search(
-                                r"([{a-f\d,A-F\d}]{32,40})\b", magnet
-                            ).group(0),
+                            
                             "magnet": magnet,
                             "torrent": torrent,
-                            "url": self.BASE_URL + url,
+                            "url": url + torUrl,
                             "date": date,
                         }
                     )
                 if len(my_dict["data"]) == self.LIMIT:
                     break
             try:
-                ul = soup.find_all("ul", class_="pagination")[-1]
+                ul = self.soup.find_all("ul", class_="pagination")[-1]
                 tpages = ul.find_all("li")[-2]
                 my_dict["current_page"] = int(
-                    soup.select_one("li.page-item.active.txlight a").text.split(
+                    self.soup.select_one("li.page-item.active.txlight a").text.split(
                         " "
                     )[0]
                 )
