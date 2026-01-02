@@ -7,26 +7,62 @@ from sources.yts import YTS
 from sources.x1337 import X1337
 from sources.torrentgalaxy import TorrentGalaxy
 from tabulate import tabulate
+from colorama import Fore, init
+from termcolor import colored
+
+
+
+
+
 
 # -------------------
 # Helper functions
-# -------------------
+# -------------------z
 
-def truncate(text, length=40):
-    return text if len(text) <= length else text[:length - 3] + "..."
+def print_icon():
+    print(colored("""⠈⠉⠛⣶⣶⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣶⣶⣶⡟⠋⠁
+⠀⠀⠀⠈⠹⣿⣿⣿⣿⣿⣷⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⡟⠉⠀⠀⠀
+⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣴⠀⠀⠀⠀⠀⠀⠀⣀⣄⡀⠀⠀⠀⠀⠀⠀⢸⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⠀⣠⣾⣦⠀⠀⣻⣿⡁⠀⣠⡾⣦⠀⠀⠈⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⠀
+⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢸⣿⡏⣿⡇⢠⣿⣿⣧⠀⣿⡏⣿⣯⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢘⡿⠀⣿⠁⠀⣿⣿⡇⠀⢿⡇⠸⣏⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠄⠀⠀⠀⠀
+⠀⠀⠀⠀⡰⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠁⢸⣿⠀⠀⣿⣿⡇⠀⢸⣷⠀⠁⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠳⡀⠀⠀⠀
+⠀⠀⠀⠀⢠⣿⣿⡿⠿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⢸⣿⡀⠀⣿⣿⡇⠀⣼⣿⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⡿⠿⣿⣿⣧⠀⠀⠀⠀
+⠀⠀⠀⠀⡾⠻⠋⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⡀⠸⣿⣷⣴⣿⣿⣷⣴⣿⡯⠀⣀⣴⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠈⠻⢻⡆⠀⠀⠀
+⠀⠀⠀⠸⠃⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡻⡿⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⢳⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⠟⠋⠉⠀⢿⣿⣿⣿⡿⠟⠻⠿⣿⣿⣿⣾⣿⣿⠿⠿⠛⠿⣿⣿⣿⣟⠇⠈⠉⠛⢿⣷⠀⠀⠀⠀⠈⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠞⠁⠀⠀⠀⠀⠈⣿⡿⠋⠀⠀⠀⠀⠈⢿⣽⢿⣿⣿⣶⠀⠀⠀⠈⠻⣿⡇⠀⠀⠀⠀⠀⠙⠆⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠟⠀⢰⣦⡄⠀⢸⣷⣾⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠘⢧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠈⢿⠇⠀⠸⣿⣿⣿⣿⣿⣻⣿⠞⡆⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣤⣀⠀⠀⢀⡟⠀⢰⠷⣿⣧⣹⣿⡍⠋⠁⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡟⠉⠀⠉⠙⢿⣦⡛⠀⠀⠈⠀⠀⠈⢸⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠶⠶⠶⠞⠋⠈⠻⢶⣤⣀⡀⢀⣀⣾⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀""", 'red'))
 
-# -------------------
-# Stub functions
-# -------------------
-
-def check_status():
+def check_status(settings):
     print("Checking status...")
-    input("Press Enter to return to main menu")
+
+    try:
+        for source in [KickAssTorrents, ThePirateBay, LimeTorrents, YTS, X1337, TorrentGalaxy]:
+            instance = source(settings["limit"] )
+            result = instance.search("test")
+            if len(result["data"]) > 0:
+                print(f"{source.__name__}: {Fore.GREEN}ONLINE{Fore.RESET} - {len(result['data'])} results found")
+            else:
+                print(f"{source.__name__}: {Fore.RED}OFFLINE{Fore.RESET} - No results found")
+    except Exception as e:
+        print(f"An error occurred while checking status: {e}")
+
 
 
 def exit_app():
     print("Exiting application...")
     raise SystemExit
+
+def truncate(text, length=40):
+    return text if len(text) <= length else text[:length - 3] + "..."
 
 
 # -------------------
@@ -70,11 +106,11 @@ def settings_menu(settings):
                     "name": "categories",
                     "message": "Select categories:",
                     "choices": [
-                        "News",
-                        "Technology",
-                        "Sports",
-                        "Finance",
-                        "Entertainment",
+                        "Movies",
+                        "TV Shows",
+                        "Application",
+                        "Games",
+                        "Music",
                     ],
                     "default": settings["categories"],
                 }
@@ -88,9 +124,11 @@ def settings_menu(settings):
                     "name": "sort_by",
                     "message": "Sort results by:",
                     "choices": [
-                        "Relevance",
                         "Date",
-                        "Popularity",
+                        "Name",
+                        "Size",
+                        "Seeders",
+                        "Leechers",
                     ],
                     "default": settings["sort_by"],
                 }
@@ -104,10 +142,12 @@ def settings_menu(settings):
                     "name": "sources",
                     "message": "Select sources:",
                     "choices": [
-                        "Google",
-                        "Bing",
-                        "DuckDuckGo",
-                        "Reddit",
+                        "kickasstorrents", 
+                        "thepiratebay", 
+                        "limetorrents", 
+                        "yts", 
+                        "x1337", 
+                        "torrentgalaxy"
                     ],
                     "default": settings["sources"],
                 }
@@ -123,19 +163,24 @@ def settings_menu(settings):
 # -------------------
 
 def main_menu():
+    
     settings = {
         "limit": 10,
         "categories": [],
         "sort_by": "Date",
-        "sources": [],
+        "sources": ["kickasstorrents", "thepiratebay", "limetorrents", "yts", "x1337", "torrentgalaxy"],
     }
 
     while True:
+
+        print_icon()
+
         answer = prompt([
+            
             {
                 "type": "list",
-                "name": "main_action",
-                "message": "Main Menu",
+                "message": "Ghidorah v1.0",
+                "name": "main_action",              
                 "choices": [
                     "Search",
                     "Check status",
@@ -151,7 +196,7 @@ def main_menu():
             print("Current settings:", settings)
             choice = input("Enter query:")
 
-            tpb = KickAssTorrents(settings["limit"])
+            tpb = LimeTorrents(settings["limit"])
             results = tpb.search(choice)
             rows = []
             for item in results["data"]:
@@ -160,7 +205,7 @@ def main_menu():
                     "size": item["size"],
                     "seeders": item["seeders"],
                     "leechers": item["leechers"],
-                    #"category": item["category"],
+                    "category": item["category"],
                     "url": truncate(item["url"], 15),
                     "date": item["date"],
                     #"hash": truncate(item["hash"], 20),
@@ -170,7 +215,7 @@ def main_menu():
             print(tabulate(rows, headers="keys", tablefmt="grid"))
 
         elif answer == "Check status":
-            check_status()
+            check_status(settings)
 
         elif answer == "Settings":
             settings_menu(settings)

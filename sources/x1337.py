@@ -5,14 +5,14 @@ from bs4 import BeautifulSoup
 class X1337:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self):
+    def __init__(self, limit):
         self.urls = [
             "https://1337x.pro",
             "https://1337x.st",
             "https://www.1377x.is",
             "https://1337x.proxyninja.net/",
             "https://1337x.unblockninja.com"]
-        self.LIMIT = 50
+        self.LIMIT = limit
 
     def search(self, query) -> dict:
 
@@ -22,7 +22,6 @@ class X1337:
 
         for url in self.urls:
             finalUrl = url + "/search/?q={}".format(query)
-            print("FINAL URL:", finalUrl)
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -33,7 +32,7 @@ class X1337:
 
             # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)
+            print("URL: {} STATUS: {}".format(finalUrl, res.status_code))
             if res.status_code != 200:
                 continue
 
@@ -52,7 +51,6 @@ class X1337:
                     leechers = row_data[2].text
                     date = row_data[3].text
                     size = row_data[4].text.replace(seeders, "")
-                    # uploader = row_data[5].find("a").text
 
                     result["data"].append(
                         {
@@ -62,14 +60,12 @@ class X1337:
                             "seeders": seeders,
                             "leechers": leechers,
                             "url": url,
-                            # "uploader": uploader,
                         }
                     )
 
                 if len(result["data"]) == self.LIMIT:
                     break
 
-            print(len(result["data"]))
             if len(result["data"]) > 0:
                 break
 

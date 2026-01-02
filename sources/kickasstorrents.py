@@ -22,7 +22,6 @@ class KickAssTorrents:
         for url in self.urls:
 
             finalUrl = url + "/usearch/{}/1/".format(query)
-            print("FINAL URL:", finalUrl)
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -34,7 +33,7 @@ class KickAssTorrents:
             # response
             self.session.headers.update(headers)
             res = self.session.get(finalUrl, timeout=15)
-            print("STATUS:", res.status_code)
+            print("URL: {} STATUS: {}".format(finalUrl, res.status_code))
             if res.status_code != 200:
                 continue
 
@@ -67,7 +66,6 @@ class KickAssTorrents:
                 if len(result["data"]) == self.LIMIT:
                     break
 
-            print(len(result["data"]))
             if len(result["data"]) > 0:
                 break
 

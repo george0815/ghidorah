@@ -5,14 +5,14 @@ from bs4 import BeautifulSoup
 class YTS:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self):
+    def __init__(self, limit):
         self.urls = [
             "https://yts.do",
             "https://yts.lt",
             "https://yts.ag",
             "https://yts.am",
             "https://yts.rs"]
-        self.LIMIT = 50
+        self.LIMIT = limit
 
     def search(self, query) -> dict:
 
@@ -22,7 +22,6 @@ class YTS:
         for url in self.urls:
 
             finalUrl = url + "/browse-movies/{}/all/all/0/0/latest".format(query)
-            print("FINAL URL:", finalUrl)
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -33,7 +32,7 @@ class YTS:
 
             # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)
+            print("URL: {} STATUS: {}".format(finalUrl, res.status_code))
             if res.status_code != 200:
                 continue
 
@@ -46,7 +45,6 @@ class YTS:
                 if len(result["data"]) == self.LIMIT:
                     break
 
-            print(len(result["data"]))
             if len(result["data"]) > 0:
                 break
 

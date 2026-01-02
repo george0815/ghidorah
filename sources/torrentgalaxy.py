@@ -5,12 +5,12 @@ from bs4 import BeautifulSoup
 class TorrentGalaxy:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self):
-        self.urls = ["https://torrentgalaxy.one"
+    def __init__(self, limit):
+        self.urls = [
                      "https://torrentgalaxy.io",
-                     "https://torrentgalaxy.inf"]
-        self.LIMIT = 50
-
+                     "https://torrentgalaxy.inf",
+                     "https://torrentgalaxy.one"]
+        self.LIMIT = limit
     def search(self, query) -> dict:
 
         # for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
@@ -18,7 +18,7 @@ class TorrentGalaxy:
         for url in self.urls:
 
             finalUrl = url + "/get-posts/keywords:{}".format(query)
-            print("FINAL URL:", finalUrl)
+    
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -29,8 +29,8 @@ class TorrentGalaxy:
 
             # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
-            print("STATUS:", res.status_code)
-            print(res.text)
+            print("URL: {} STATUS: {}".format(finalUrl, res.status_code))
+
             if res.status_code != 200:
                 continue
 
@@ -108,7 +108,6 @@ class TorrentGalaxy:
                 if len(result["data"]) == self.LIMIT:
                     break
 
-            print(len(result["data"]))
             if len(result["data"]) > 0:
                 break
 
