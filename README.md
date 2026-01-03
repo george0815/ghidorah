@@ -1,6 +1,6 @@
 ## Ghidorah - CLI torrrent search engine
 
-Quick torrent search engine, mainly made it for practice with Python, and for integrating a seach engine into [my torrent client](https://github.com/george0815/lain). 
+Torrent search engine, mainly made it for practice with Python, and for integrating a seach engine into [my torrent client](https://github.com/george0815/lain). 
 
 As of 1/3/2026, supports:
 
