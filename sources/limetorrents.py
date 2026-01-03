@@ -4,14 +4,16 @@ from bs4 import BeautifulSoup
 class LimeTorrents:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
             "https://www.limetorrents.cc",
             "https://limetorrents.torrentbay.st",
             "https://limetorrents.ninjaproxy1.com",
             "https://limetorrents.piratic.org",
             "https://limetorrents.torrentsbay.org"]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
+        self.starting_page = 1
 
     def search(self, query) -> dict:
 
@@ -19,7 +21,7 @@ class LimeTorrents:
         result = {"data": []}
 
         for url in self.urls:
-            finalUrl = url + "/search/all/{}//1".format(query)
+            finalUrl = url + "/search/all/{}//{}".format(query, self.starting_page)
 
 
             headers = {
@@ -57,22 +59,28 @@ class LimeTorrents:
                 if len(row_data) > 4:
                     leechers = row_data[4].text
 
-                result["data"].append(
-                    {
-                        "name": name,
-                        "size": size,
-                        "date": date,
-                        "category": category if category != date else None,
-                        "seeders": seeders,
-                        "leechers": leechers,
-                        "url": torUrl,
-                    }
-                )
+                if category in self.settings["categories"] or (category == "Other" and "Other" in self.settings["categories"]):
+                    result["data"].append(
+                        {
+                            "name": name,
+                            "size": size,
+                            "date": date,
+                            "category": category if category != date else None,
+                            "seeders": seeders,
+                            "leechers": leechers,
+                            "url": torUrl,
+                        }
+                    )
 
                 if len(result["data"]) == self.LIMIT:
                     break
 
             if len(result["data"]) > 0:
                 break        
+
+        if len(result["data"]) != self.LIMIT:
+            self.starting_page += 1
+            more_results = self.search(query)
+            result["data"].extend(more_results["data"])
 
         return result

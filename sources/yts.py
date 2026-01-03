@@ -5,14 +5,15 @@ from bs4 import BeautifulSoup
 class YTS:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
             "https://yts.do",
             "https://yts.lt",
             "https://yts.ag",
             "https://yts.am",
             "https://yts.rs"]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
 
     def search(self, query) -> dict:
 
@@ -40,8 +41,12 @@ class YTS:
 
             # actually parse the data
             for div in self.soup.find_all("div", class_="browse-movie-wrap"):
-                url = div.find("a")["href"]
-                result["data"].append({"url": url})
+                torUrl = div.find("a")["href"]
+
+                if "Movies" in self.settings["categories"]:
+                    result["data"].append({"url": torUrl,
+                                           "category": "Movies"})
+                    
                 if len(result["data"]) == self.LIMIT:
                     break
 

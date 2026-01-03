@@ -5,12 +5,14 @@ from bs4 import BeautifulSoup
 class TorrentGalaxy:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
                      "https://torrentgalaxy.io",
                      "https://torrentgalaxy.inf",
                      "https://torrentgalaxy.one"]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
+        
     def search(self, query) -> dict:
 
         # for each url, check for STATUS 200, then check if valid data is returned, if not, move to next url
@@ -89,21 +91,21 @@ class TorrentGalaxy:
                     except:
                         category = None
 
-                    result["data"].append(
-                        {
-                            "name": name,
-                            "size": size,
-                            "seeders": seeders,
-                            "leechers": leechers,
-                            "category": category,
-                            "uploader": uploader,
-                            "imdb_id": imdb_url.split("=")[-1],
-                            "magnet": magnet,
-                            "torrent": torrent,
-                            "url": url + torUrl,
-                            "date": date,
-                        }
-                    )
+                    if "Movies" in self.settings["categories"]:
+                        result["data"].append(
+                            {
+                                "name": name,
+                                "size": size,
+                                "seeders": seeders,
+                                "leechers": leechers,
+                                "category": "Movies",
+                                "uploader": uploader,
+                                "magnet": magnet,
+                                "torrent": torrent,
+                                "url": url + torUrl,
+                                "date": date,
+                            }
+                        )
 
                 if len(result["data"]) == self.LIMIT:
                     break

@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 class KickAssTorrents:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
             "https://kickasstorrents.id",
             "https://kickasstorrents.to",
@@ -12,7 +12,9 @@ class KickAssTorrents:
             "https://kick4ss.com",
             "https://kickass.torrentsbay.org",
         ]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
+        self.starting_page = 1
         self.session = requests.Session()
 
     def search(self, query) -> dict:
@@ -21,7 +23,7 @@ class KickAssTorrents:
         result = {"data": []}
         for url in self.urls:
 
-            finalUrl = url + "/usearch/{}/1/".format(query)
+            finalUrl = url + "/usearch/{}/{}/".format(query, self.starting_page)
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -52,16 +54,17 @@ class KickAssTorrents:
                     leechers = row_data[3].text.strip()
                     date = row_data[2].text.strip()
 
-                    result["data"].append(
-                        {
-                            "name": name,
-                            "size": size,
-                            "date": date,
-                            "seeders": seeders,
-                            "leechers": leechers,
-                            "url": torUrl,
-                        }
-                    )
+                    if "Other" in self.settings["categories"]:
+                        result["data"].append(
+                            {
+                                "name": name,
+                                "size": size,
+                                "date": date,
+                                "seeders": seeders,
+                                "leechers": leechers,
+                                "url": torUrl,
+                            }
+                        )
 
                 if len(result["data"]) == self.LIMIT:
                     break
@@ -69,5 +72,9 @@ class KickAssTorrents:
             if len(result["data"]) > 0:
                 break
 
+        if len(result["data"]) != self.LIMIT:
+            self.starting_page += 1
+            more_results = self.search(query)
+            result["data"].extend(more_results["data"])
 
         return result

@@ -5,14 +5,15 @@ from bs4 import BeautifulSoup
 class X1337:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
             "https://1337x.pro",
             "https://1337x.st",
             "https://www.1377x.is",
             "https://1337x.proxyninja.net/",
             "https://1337x.unblockninja.com"]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
 
     def search(self, query) -> dict:
 
@@ -52,16 +53,17 @@ class X1337:
                     date = row_data[3].text
                     size = row_data[4].text.replace(seeders, "")
 
-                    result["data"].append(
-                        {
-                            "name": name,
-                            "size": size,
-                            "date": date,
-                            "seeders": seeders,
-                            "leechers": leechers,
-                            "url": url,
-                        }
-                    )
+                    if "Other" in self.settings["categories"]:
+                        result["data"].append(
+                            {
+                                "name": name,
+                                "size": size,
+                                "date": date,
+                                "seeders": seeders,
+                                "leechers": leechers,
+                                "url": url,
+                            }
+                        )
 
                 if len(result["data"]) == self.LIMIT:
                     break

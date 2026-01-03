@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 class ThePirateBay:
 
     # Mainly just initializes the urls to be used for searching
-    def __init__(self, limit):
+    def __init__(self, settings):
         self.urls = [
             "https://thepiratebay10.org",
             "https://tpb.party",
@@ -13,7 +13,9 @@ class ThePirateBay:
             "https://thepiratebay11.com",
             "https://thepiratebay.zone"
         ]
-        self.LIMIT = limit
+        self.LIMIT = settings["limit"]
+        self.settings = settings
+        self.starting_page = 1
 
     def search(self, query) -> dict:
 
@@ -21,7 +23,7 @@ class ThePirateBay:
         result = {"data": []}
         for url in self.urls:
 
-            finalUrl = url + "/search/{}/1/99/0".format(query)
+            finalUrl = url + "/search/{}/{}/99/0".format(query, self.starting_page)
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -57,22 +59,28 @@ class ThePirateBay:
                     uploader = row_data[7].text
                     dateUploaded = row_data[2].text
 
-                    result["data"].append(
-                        {
-                            "name": name,
-                            "size": size,
-                            "seeders": seeders,
-                            "leechers": leechers,
-                            "category": category,
-                            "uploader": uploader,
-                            "url": url,
-                            "date": dateUploaded,
-                            "hash": re.search(
-                                r"([{a-f\d,A-F\d}]{32,40})\b", magnet
-                            ).group(0),
-                            "magnet": magnet,
-                        }
-                    )
+                    cat_check = False
+                    for cat in self.settings["categories"]:
+                        if cat in category:
+                            cat_check = True
+
+                    if cat_check:
+                        result["data"].append(
+                            {
+                                "name": name,
+                                "size": size,
+                                "seeders": seeders,
+                                "leechers": leechers,
+                                "category": category,
+                                "uploader": uploader,
+                                "url": url,
+                                "date": dateUploaded,
+                                "hash": re.search(
+                                    r"([{a-f\d,A-F\d}]{32,40})\b", magnet
+                                ).group(0),
+                                "magnet": magnet,
+                            }
+                        )
 
                 if len(result["data"]) == self.LIMIT:
                     break
@@ -82,5 +90,11 @@ class ThePirateBay:
        
             if len(result["data"]) > 0:
                 break
+
+
+        if len(result["data"]) != self.LIMIT:
+            self.starting_page += 1
+            more_results = self.search(query)
+            result["data"].extend(more_results["data"])
 
         return result
