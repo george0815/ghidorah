@@ -8,8 +8,12 @@ from sources.x1337 import X1337
 from sources.torrentgalaxy import TorrentGalaxy
 from tabulate import tabulate
 from colorama import Fore, init
+import contextlib
+import os
 from termcolor import colored
 import json
+import argparse
+import sys
 
 
 
@@ -17,8 +21,100 @@ import json
 
 # -------------------
 # Helper functions
-# -------------------z
+# -------------------
 
+@contextlib.contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+def run_search(query, settings):
+    results = {
+        "data": [],
+        "errors": []
+    }
+
+
+    for source_name in settings["sources"]:
+        source_class = SOURCE_REGISTRY.get(source_name)
+
+        if not source_class:
+            continue
+
+        try:
+            instance = source_class(settings)
+            response = instance.search(query)
+
+            for item in response.get("data", []):
+                normalized_item = normalize_result(item, source_name)
+                results["data"].append(normalized_item)
+
+        except Exception as e:
+            results["errors"].append(f"Error with {source_name}: {e}")
+
+
+    sort_config = SORT_MAP.get(settings["sort_by"])
+    if sort_config:
+        results["data"].sort(
+            key=sort_config["key"],
+            reverse=sort_config["reverse"]
+        )
+
+
+    return results
+
+
+def cli_entry():
+ 
+    parser = argparse.ArgumentParser(description="Ghidorah Torrent Search CLI")
+    parser.add_argument("query", type=str, help="Search query")
+    parser.add_argument("--limit", type=int, default=2, help="Number of results per source")
+    parser.add_argument("--total_limit", type=int, default=10, help="Total number of results to display")
+    parser.add_argument("--categories", type=str, nargs='+', default=["Movies",
+                                                                    "TV Shows",
+                                                                    "Application",
+                                                                    "Games",
+                                                                    "Music",
+                                                                    "Other"], help="Categories to search in")
+    parser.add_argument("--sort_by", type=str, choices=["Name", "Size", "Seeders", "Sources"], default="Sources", help="Sort results by")
+    parser.add_argument("--sources", type=str, nargs='+', choices=["kickasstorrents",
+                                                                 "thepiratebay",
+                                                                 "limetorrents",
+                                                                 "yts",
+                                                                 "x1337",
+                                                                 "torrentgalaxy"], default=["kickasstorrents",
+                                                                                           "thepiratebay",
+                                                                                           "limetorrents",
+                                                                                           "yts",
+                                                                                           "x1337",
+                                                                                           "torrentgalaxy"], help="Sources to search from")
+
+
+    args = parser.parse_args()
+
+    settings = {
+        "limit": args.limit,
+        "total_limit": args.total_limit,
+        "categories": args.categories,
+        "sort_by": args.sort_by,
+        "sources": args.sources,
+    }
+
+
+    try:
+        results = run_search(args.query, settings)
+        print(json.dumps(results, ensure_ascii=False))
+        sys.exit(0)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+      
+
+  
 def print_icon():
     print(colored("""⠈⠉⠛⣶⣶⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣶⣶⣶⡟⠋⠁
 ⠀⠀⠀⠈⠹⣿⣿⣿⣿⣿⣷⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⡟⠉⠀⠀⠀
@@ -105,7 +201,7 @@ SORT_MAP = {
         "key": lambda x: int(x["seeders"]) if str(x["seeders"]).isdigit() else 0,
         "reverse": True
     },
-    "Sources": {
+    "Source": {
         "key": lambda x: x["source"].lower(),
         "reverse": False
     }
@@ -363,5 +459,8 @@ def main_menu():
 
 
 if __name__ == "__main__":
-    main_menu()
+    if len(sys.argv) > 1:
+        cli_entry() 
+    else:
+        main_menu()
 
