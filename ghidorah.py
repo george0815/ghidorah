@@ -107,7 +107,8 @@ def cli_entry():
 
 
     try:
-        results = run_search(args.query, settings)
+        with suppress_stdout():
+            results = run_search(args.query, settings)
         print(json.dumps(results, ensure_ascii=False))
         sys.exit(0)
     except Exception as e:
