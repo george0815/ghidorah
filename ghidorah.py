@@ -81,7 +81,7 @@ def cli_entry():
                                                                     "Games",
                                                                     "Music",
                                                                     "Other"], help="Categories to search in")
-    parser.add_argument("--sort_by", type=str, choices=["Name", "Size", "Seeders", "Sources"], default="Sources", help="Sort results by")
+    parser.add_argument("--sort_by", type=str, choices=["Name", "Size", "Seeders", "Source"], default="Source", help="Sort results by")
     parser.add_argument("--sources", type=str, nargs='+', choices=["kickasstorrents",
                                                                  "thepiratebay",
                                                                  "limetorrents",
@@ -256,7 +256,7 @@ def settings_menu(settings):
                     "Total Limit",
                     "Categories",
                     "Sort by",
-                    "Sources",
+                    "Source",
                     Separator(),
                     "Back"
                 ],
@@ -325,7 +325,7 @@ def settings_menu(settings):
                         "Name",
                         "Size",
                         "Seeders",
-                        "Sources",
+                        "Source",
                     ],
                     "default": settings["sort_by"],
                 }
