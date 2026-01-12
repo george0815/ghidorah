@@ -164,6 +164,9 @@ SOURCE_REGISTRY = {
     "yts": YTS,
     "x1337": X1337,
     "torrentgalaxy": TorrentGalaxy,
+    # qb plugins (string path)
+    "qb:rarbg": "plugins/rarbg.py",
+    "qb:nyaa": "plugins/nyaa.py",
 }
 
 
