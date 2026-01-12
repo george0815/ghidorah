@@ -28,6 +28,10 @@ sys.stderr.reconfigure(encoding="utf-8")
 # Helper functions
 # -------------------
 
+#TODO: function that detects what qb plugins are available
+ 
+#TODO: function that checks if category is supported by qb plugin, as well as if the plugin exists
+
 @contextlib.contextmanager
 def suppress_stdout():
     with open(os.devnull, "w") as devnull:
@@ -99,6 +103,7 @@ def cli_entry():
                                                                                            "x1337",
                                                                                            "torrentgalaxy"], help="Sources to search from")
 
+    parser.add_argument("--use_qb_plugins", action="store_true", help="Enable qBittorrent plugins")
 
     args = parser.parse_args()
 
@@ -108,12 +113,24 @@ def cli_entry():
         "categories": args.categories,
         "sort_by": args.sort_by,
         "sources": args.sources,
+        "use_qb_plugins": args.use_qb_plugins,
     }
 
 
     try:
         with suppress_stdout():
-            results = run_search(args.query, settings)
+            if not args.use_qb_plugins:
+                results = run_search(args.query, settings)
+            else: #revise this later 
+                from qb_env.ghidorah_qb import run_qbt_plugin
+
+                #check if plugin exists for each source, check if category is supported
+
+                #if so, run it
+
+                #if not, let user know
+
+
         print(json.dumps(results, ensure_ascii=False))
         sys.exit(0)
     except Exception as e:
@@ -262,6 +279,7 @@ def settings_menu(settings):
                 "choices": [
                     "Limit",
                     "Total Limit",
+                    "Use qBittorrent plugins",
                     "Categories",
                     "Sort by",
                     "Source",
@@ -303,6 +321,16 @@ def settings_menu(settings):
             else:
                 settings["total_limit"] = 10
 
+        elif answer == "Use qBittorrent plugins":
+            result = prompt([
+                {
+                    "type": "confirm",
+                    "name": "use_qb_plugins",
+                    "message": "Enable qBittorrent plugins?",
+                    "default": settings.get("use_qb_plugins", False),
+                }
+            ])
+            settings["use_qb_plugins"] = result["use_qb_plugins"]
 
         elif answer == "Categories":
             result = prompt([
@@ -380,6 +408,7 @@ def main_menu():
                         "Other"],
         "sort_by": "Source",
         "sources": ["kickasstorrents", "thepiratebay", "limetorrents", "yts", "x1337", "torrentgalaxy"],
+        "use_qb_plugins": False,
     }
 
     while True:
