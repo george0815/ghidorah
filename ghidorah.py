@@ -28,9 +28,10 @@ sys.stderr.reconfigure(encoding="utf-8")
 # Helper functions
 # -------------------
 
-#TODO: function that detects what qb plugins are available
+
  
 #TODO: function that checks if category is supported by qb plugin, as well as if the plugin exists
+
 
 @contextlib.contextmanager
 def suppress_stdout():
