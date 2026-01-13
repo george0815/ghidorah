@@ -16,6 +16,19 @@ import json
 import re
 import argparse
 import sys
+
+
+RUNTIME_ROOT = (
+    os.path.dirname(sys.executable)
+    if getattr(sys, "frozen", False)
+    else os.path.dirname(os.path.abspath(__file__))
+)
+
+QB_ENV_DIR = os.path.join(RUNTIME_ROOT, "qb_env")
+if QB_ENV_DIR not in sys.path:
+    sys.path.insert(0, QB_ENV_DIR)
+
+    
 from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
 
 
@@ -23,7 +36,14 @@ from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
+if getattr(sys, 'frozen', False):
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
 
+external_qb_env = os.path.join(base_dir, "qb_env")
+if external_qb_env not in sys.path:
+    sys.path.insert(0, external_qb_env)
 
 
 
@@ -114,6 +134,8 @@ BASE_SOURCE_LIST = ["kickasstorrents",
 
 
 engines = detect_qb_plugins()
+
+
 
 QB_SOURCE_LIST = engines.keys()
 

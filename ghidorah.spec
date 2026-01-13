@@ -10,7 +10,12 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'qb_env.engines',
+        'qb_env.engines.fitgirl_repacks',
+        'qb_env.engines.kickasstorrents',
+        'qb_env.engines.thepiratebay',
+    ],
     noarchive=False,
     optimize=0,
 )
