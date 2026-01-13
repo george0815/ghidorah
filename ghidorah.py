@@ -30,6 +30,25 @@ sys.stderr.reconfigure(encoding="utf-8")
 # Helper functions
 # -------------------
 
+def qb_missing(value):
+    return value in (None, "", -1)
+
+def safe_int(value, default=0):
+    try:
+        if qb_missing(value):
+            return default
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+def safe_date(unix_ts):
+    try:
+        if qb_missing(unix_ts):
+            return "N/A"
+        return datetime.fromtimestamp(int(unix_ts)).strftime("%m/%d/%Y")
+    except (ValueError, TypeError, OSError):
+        return "N/A"
+
 SOURCE_REGISTRY = {
     "kickasstorrents": KickAssTorrents,
     "thepiratebay": ThePirateBay,
@@ -293,18 +312,17 @@ def normalize_result(item, source_name, qb):
     
     else:
         
-
         return {
-            "name": "N/A" if item.get("name", "") == -1 else item.get("name", ""),
-            "size": "N/A" if item.get("size", "N/A") == -1 else item.get("size", "N/A"),
-            "seeders": int(item.get("seeds", 0)) if str(item.get("seeds", "")).isdigit() else 0,
-            "leechers": int(item.get("leech", 0)) if str(item.get("leech", "")).isdigit() else 0,
+            "name": item.get("name") if not qb_missing(item.get("name")) else "N/A",
+            "size": item.get("size") if not qb_missing(item.get("size")) else "N/A",
+            "seeders": safe_int(item.get("seeds")),
+            "leechers": safe_int(item.get("leech")),
             "category": "N/A",
             "source": source_name,
-            "url": item.get("engine_url", "N/A"),
-            "date": "N/A" if item.get("pub_date") == -1 else datetime.fromtimestamp(item.get("pub_date")).strftime("%m/%d/%Y"),
-            "hash": "N/A",           # not provided by qB plugins
-            "magnet": "N/A" if item.get("link", "") == -1 else item.get("link", "")
+            "url": item.get("engine_url") if not qb_missing(item.get("engine_url")) else "N/A",
+            "date": safe_date(item.get("pub_date")),
+            "hash": "N/A",  # qB plugins never provide this
+            "magnet": item.get("link") if not qb_missing(item.get("link")) else "N/A"
         }
 
 
