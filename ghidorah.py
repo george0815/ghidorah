@@ -14,6 +14,7 @@ from termcolor import colored
 import json
 import argparse
 import sys
+from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
 
 
 
@@ -28,153 +29,6 @@ sys.stderr.reconfigure(encoding="utf-8")
 # Helper functions
 # -------------------
 
-
- 
-#TODO: function that checks if category is supported by qb plugin, as well as if the plugin exists
-
-
-@contextlib.contextmanager
-def suppress_stdout():
-    with open(os.devnull, "w") as devnull:
-        old_stdout = sys.stdout
-        sys.stdout = devnull
-        try:
-            yield
-        finally:
-            sys.stdout = old_stdout
-
-def run_search(query, settings):
-    results = {
-        "data": [],
-        "errors": []
-    }
-
-
-    for source_name in settings["sources"]:
-        source_class = SOURCE_REGISTRY.get(source_name)
-
-        if not source_class:
-            continue
-
-        try:
-            instance = source_class(settings)
-            response = instance.search(query)
-
-            for item in response.get("data", []):
-                normalized_item = normalize_result(item, source_name)
-                results["data"].append(normalized_item)
-
-        except Exception as e:
-            results["errors"].append(f"Error with {source_name}: {e}")
-
-
-    sort_config = SORT_MAP.get(settings["sort_by"])
-    if sort_config:
-        results["data"].sort(
-            key=sort_config["key"],
-            reverse=sort_config["reverse"]
-        )
-
-
-    return results
-
-
-def cli_entry():
- 
-    parser = argparse.ArgumentParser(description="Ghidorah Torrent Search CLI")
-    parser.add_argument("query", type=str, help="Search query")
-    parser.add_argument("--limit", type=int, default=2, help="Number of results per source")
-    parser.add_argument("--total_limit", type=int, default=10, help="Total number of results to display")
-    parser.add_argument("--categories", type=str, nargs='+', default=["Movies",
-                                                                    "TV Shows",
-                                                                    "Application",
-                                                                    "Games",
-                                                                    "Music",
-                                                                    "Other"], help="Categories to search in")
-    parser.add_argument("--sort_by", type=str, choices=["Name", "Size", "Seeders", "Source"], default="Source", help="Sort results by")
-    parser.add_argument("--sources", type=str, nargs='+', choices=["kickasstorrents",
-                                                                 "thepiratebay",
-                                                                 "limetorrents",
-                                                                 "yts",
-                                                                 "x1337",
-                                                                 "torrentgalaxy"], default=["kickasstorrents",
-                                                                                           "thepiratebay",
-                                                                                           "limetorrents",
-                                                                                           "yts",
-                                                                                           "x1337",
-                                                                                           "torrentgalaxy"], help="Sources to search from")
-
-    parser.add_argument("--use_qb_plugins", action="store_true", help="Enable qBittorrent plugins")
-
-    args = parser.parse_args()
-
-    settings = {
-        "limit": args.limit,
-        "total_limit": args.total_limit,
-        "categories": args.categories,
-        "sort_by": args.sort_by,
-        "sources": args.sources,
-        "use_qb_plugins": args.use_qb_plugins,
-    }
-
-
-    try:
-        with suppress_stdout():
-            if not args.use_qb_plugins:
-                results = run_search(args.query, settings)
-            else: #revise this later 
-                from qb_env.ghidorah_qb import run_qbt_plugin
-
-                #check if plugin exists for each source, check if category is supported
-
-                #if so, run it
-
-                #if not, let user know
-
-
-        print(json.dumps(results, ensure_ascii=False))
-        sys.exit(0)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-      
-
-  
-def print_icon():
-    print(colored("""⠈⠉⠛⣶⣶⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣶⣶⣶⡟⠋⠁
-⠀⠀⠀⠈⠹⣿⣿⣿⣿⣿⣷⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⡟⠉⠀⠀⠀
-⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣴⠀⠀⠀⠀⠀⠀⠀⣀⣄⡀⠀⠀⠀⠀⠀⠀⢸⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⠀⣠⣾⣦⠀⠀⣻⣿⡁⠀⣠⡾⣦⠀⠀⠈⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⠀
-⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢸⣿⡏⣿⡇⢠⣿⣿⣧⠀⣿⡏⣿⣯⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢘⡿⠀⣿⠁⠀⣿⣿⡇⠀⢿⡇⠸⣏⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠄⠀⠀⠀⠀
-⠀⠀⠀⠀⡰⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠁⢸⣿⠀⠀⣿⣿⡇⠀⢸⣷⠀⠁⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠳⡀⠀⠀⠀
-⠀⠀⠀⠀⢠⣿⣿⡿⠿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⢸⣿⡀⠀⣿⣿⡇⠀⣼⣿⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⡿⠿⣿⣿⣧⠀⠀⠀⠀
-⠀⠀⠀⠀⡾⠻⠋⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⡀⠸⣿⣷⣴⣿⣿⣷⣴⣿⡯⠀⣀⣴⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠈⠻⢻⡆⠀⠀⠀
-⠀⠀⠀⠸⠃⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡻⡿⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⢳⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⠟⠋⠉⠀⢿⣿⣿⣿⡿⠟⠻⠿⣿⣿⣿⣾⣿⣿⠿⠿⠛⠿⣿⣿⣿⣟⠇⠈⠉⠛⢿⣷⠀⠀⠀⠀⠈⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠞⠁⠀⠀⠀⠀⠈⣿⡿⠋⠀⠀⠀⠀⠈⢿⣽⢿⣿⣿⣶⠀⠀⠀⠈⠻⣿⡇⠀⠀⠀⠀⠀⠙⠆⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠟⠀⢰⣦⡄⠀⢸⣷⣾⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠘⢧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠈⢿⠇⠀⠸⣿⣿⣿⣿⣿⣻⣿⠞⡆⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣤⣀⠀⠀⢀⡟⠀⢰⠷⣿⣧⣹⣿⡍⠋⠁⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡟⠉⠀⠉⠙⢿⣦⡛⠀⠀⠈⠀⠀⠈⢸⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠶⠶⠶⠞⠋⠈⠻⢶⣤⣀⡀⢀⣀⣾⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀""", 'red'))
-
-def check_status(settings):
-    print("Checking status...")
-
-    try:
-        for source in [KickAssTorrents, ThePirateBay, LimeTorrents, YTS, X1337, TorrentGalaxy]:
-            instance = source(settings)
-            result = instance.search("test")
-            if len(result["data"]) > 0:
-                print(f"{source.__name__}: {Fore.GREEN}ONLINE{Fore.RESET} - {len(result['data'])} results found")
-            else:
-                print(f"{source.__name__}: {Fore.RED}OFFLINE{Fore.RESET} - No results found")
-    except Exception as e:
-        print(f"An error occurred while checking status: {e}")
-
 SOURCE_REGISTRY = {
     "kickasstorrents": KickAssTorrents,
     "thepiratebay": ThePirateBay,
@@ -182,37 +36,25 @@ SOURCE_REGISTRY = {
     "yts": YTS,
     "x1337": X1337,
     "torrentgalaxy": TorrentGalaxy,
-    # qb plugins (string path)
-    "qb:rarbg": "plugins/rarbg.py",
-    "qb:nyaa": "plugins/nyaa.py",
+  
 }
 
 
-def parse_size(size):
-    if not size or size == "N/A":
-        return 0
-    
-    size = size.upper().strip()
-    number, unit = size.split()[:2]
-    number = float(number)
+BASE_SOURCE_LIST = ["kickasstorrents", 
+                        "thepiratebay", 
+                        "limetorrents", 
+                        "yts", 
+                        "x1337", 
+                        "torrentgalaxy"]
 
-    multipliers = {
-        "KiB": 1,
-        "MiB": 1024,
-        "GiB": 1024 ** 2,
-        "TiB": 1024 ** 3,
-        "kb": 1,
-        "mb": 1024,
-        "gb": 1024 ** 2,
-        "tb": 1024 ** 3,
-        "KB": 1,
-        "MB": 1024,
-        "GB": 1024 ** 2,
-        "TB": 1024 ** 3,
-    }
 
-    return number * multipliers.get(unit, 0)
-    
+engines = detect_qb_plugins()
+
+QB_SOURCE_LIST = engines.keys()
+print("QB SOURCE LIST:", QB_SOURCE_LIST)    
+
+SOURCES = list(QB_SOURCE_LIST) + list(BASE_SOURCE_LIST)
+
 
 SORT_MAP = {
 
@@ -249,6 +91,180 @@ NORMALIZED_FIELDS = {
 }
 
 
+
+@contextlib.contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+def run_search(query, settings):
+    results = {
+        "data": [],
+        "errors": []
+    }
+
+    if settings["use_qb_plugins"] == False:
+        
+
+        for source_name in settings["sources"]:
+            source_class = SOURCE_REGISTRY.get(source_name)
+    
+            if not source_class:
+                continue
+    
+            try:
+                instance = source_class(settings)
+                response = instance.search(query)
+    
+                for item in response.get("data", []):
+                    normalized_item = normalize_result(item, source_name)
+                    results["data"].append(normalized_item)
+    
+            except Exception as e:
+                results["errors"].append(f"Error with {source_name}: {e}")
+    
+    
+        sort_config = SORT_MAP.get(settings["sort_by"])
+        if sort_config:
+            results["data"].sort(
+                key=sort_config["key"],
+                reverse=sort_config["reverse"]
+            )
+
+    else:
+        pass
+
+    return results
+
+
+def cli_entry():
+ 
+    parser = argparse.ArgumentParser(description="Ghidorah Torrent Search CLI")
+    parser.add_argument("query", type=str, help="Search query")
+    parser.add_argument("--limit", type=int, default=2, help="Number of results per source")
+    parser.add_argument("--total_limit", type=int, default=10, help="Total number of results to display")
+    parser.add_argument("--categories", type=str, nargs='+', default=["Movies",
+                                                                    "TV Shows",
+                                                                    "Application",
+                                                                    "Games",
+                                                                    "Music",
+                                                                    "Other"], help="Categories to search in")
+    parser.add_argument("--sort_by", type=str, choices=["Name", "Size", "Seeders", "Source"], default="Source", help="Sort results by")
+    parser.add_argument("--sources", type=str, nargs='+', choices=SOURCES, default=SOURCES, help="Sources to search from")
+
+    parser.add_argument("--use_qb_plugins", action="store_true", help="Enable qBittorrent plugins")
+
+    args = parser.parse_args()
+
+    settings = {
+        "limit": args.limit,
+        "total_limit": args.total_limit,
+        "categories": args.categories,
+        "sort_by": args.sort_by,
+        "use_qb_plugins": args.use_qb_plugins,
+        "sources": args.sources,
+    }
+
+
+    try:
+        with suppress_stdout():
+            if not args.use_qb_plugins:
+                settings["sources"] = set(BASE_SOURCE_LIST) & set(args.sources)
+            else: #revise this later 
+                settings["sources"] = set(QB_SOURCE_LIST) & set(args.sources)
+
+            results = run_search(args.query, settings)
+
+    
+
+
+        print(json.dumps(results, ensure_ascii=False))
+        sys.exit(0)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+      
+
+  
+def print_icon():
+    print(colored("""⠈⠉⠛⣶⣶⣶⣦⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣶⣶⣶⡟⠋⠁
+⠀⠀⠀⠈⠹⣿⣿⣿⣿⣿⣷⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⣿⣿⣿⣿⣿⡟⠉⠀⠀⠀
+⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣴⠀⠀⠀⠀⠀⠀⠀⣀⣄⡀⠀⠀⠀⠀⠀⠀⢸⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⠀⣠⣾⣦⠀⠀⣻⣿⡁⠀⣠⡾⣦⠀⠀⠈⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⠀
+⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢸⣿⡏⣿⡇⢠⣿⣿⣧⠀⣿⡏⣿⣯⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⢘⡿⠀⣿⠁⠀⣿⣿⡇⠀⢿⡇⠸⣏⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠄⠀⠀⠀⠀
+⠀⠀⠀⠀⡰⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⠀⠁⢸⣿⠀⠀⣿⣿⡇⠀⢸⣷⠀⠁⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠳⡀⠀⠀⠀
+⠀⠀⠀⠀⢠⣿⣿⡿⠿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⢸⣿⡀⠀⣿⣿⡇⠀⣼⣿⠀⠀⠀⢀⣿⣿⣿⣿⣿⣿⣿⡿⠿⣿⣿⣧⠀⠀⠀⠀
+⠀⠀⠀⠀⡾⠻⠋⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⡀⠸⣿⣷⣴⣿⣿⣷⣴⣿⡯⠀⣀⣴⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠈⠻⢻⡆⠀⠀⠀
+⠀⠀⠀⠸⠃⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡻⡿⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⢳⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⠟⠋⠉⠀⢿⣿⣿⣿⡿⠟⠻⠿⣿⣿⣿⣾⣿⣿⠿⠿⠛⠿⣿⣿⣿⣟⠇⠈⠉⠛⢿⣷⠀⠀⠀⠀⠈⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠞⠁⠀⠀⠀⠀⠈⣿⡿⠋⠀⠀⠀⠀⠈⢿⣽⢿⣿⣿⣶⠀⠀⠀⠈⠻⣿⡇⠀⠀⠀⠀⠀⠙⠆⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠟⠀⢰⣦⡄⠀⢸⣷⣾⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠘⢧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠈⢿⠇⠀⠸⣿⣿⣿⣿⣿⣻⣿⠞⡆⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣤⣀⠀⠀⢀⡟⠀⢰⠷⣿⣧⣹⣿⡍⠋⠁⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡟⠉⠀⠉⠙⢿⣦⡛⠀⠀⠈⠀⠀⠈⢸⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠶⠶⠶⠞⠋⠈⠻⢶⣤⣀⡀⢀⣀⣾⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠛⠛⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀""", 'red'))
+
+
+def check_status(settings):
+    print("Checking status...")
+
+    try:
+        
+        
+        if settings["use_qb_plugins"] == False:
+            for source in [KickAssTorrents, ThePirateBay, LimeTorrents, YTS, X1337, TorrentGalaxy]:
+                instance = source(settings)
+                result = instance.search("test")
+                if len(result["data"]) > 0:
+                    print(f"{source.__name__}: {Fore.GREEN}ONLINE{Fore.RESET} - {len(result['data'])} results found")
+                else:
+                    print(f"{source.__name__}: {Fore.RED}OFFLINE{Fore.RESET} - No results found")
+                    
+        else:
+            #TODO: fill this in
+            pass
+            
+    except Exception as e:
+        print(f"An error occurred while checking status: {e}")
+
+
+def parse_size(size):
+    if not size or size == "N/A":
+        return 0
+    
+    size = size.upper().strip()
+    number, unit = size.split()[:2]
+    number = float(number)
+
+    multipliers = {
+        "KiB": 1,
+        "MiB": 1024,
+        "GiB": 1024 ** 2,
+        "TiB": 1024 ** 3,
+        "kb": 1,
+        "mb": 1024,
+        "gb": 1024 ** 2,
+        "tb": 1024 ** 3,
+        "KB": 1,
+        "MB": 1024,
+        "GB": 1024 ** 2,
+        "TB": 1024 ** 3,
+    }
+
+    return number * multipliers.get(unit, 0)
+    
+
+
+
+
 def normalize_result(item, source_name):
     normalized = NORMALIZED_FIELDS.copy()
     for key in normalized:
@@ -283,7 +299,7 @@ def settings_menu(settings):
                     "Use qBittorrent plugins",
                     "Categories",
                     "Sort by",
-                    "Source",
+                    "Sources",
                     Separator(),
                     "Back"
                 ],
@@ -370,19 +386,13 @@ def settings_menu(settings):
             settings["sort_by"] = result["sort_by"]
 
         elif answer == "Sources":
+            print("Available sources:", SOURCES, QB_SOURCE_LIST)
             result = prompt([
                 {
                     "type": "checkbox",
                     "name": "sources",
                     "message": "Select sources:",
-                    "choices": [
-                        "kickasstorrents", 
-                        "thepiratebay", 
-                        "limetorrents", 
-                        "yts", 
-                        "x1337", 
-                        "torrentgalaxy"
-                    ],
+                    "choices": QB_SOURCE_LIST if settings["use_qb_plugins"] else BASE_SOURCE_LIST ,
                     "default": settings["sources"],
                 }
             ])
@@ -408,7 +418,7 @@ def main_menu():
                         "Music",
                         "Other"],
         "sort_by": "Source",
-        "sources": ["kickasstorrents", "thepiratebay", "limetorrents", "yts", "x1337", "torrentgalaxy"],
+        "sources": BASE_SOURCE_LIST,
         "use_qb_plugins": False,
     }
 
@@ -437,30 +447,7 @@ def main_menu():
             print("Current settings:", settings)
             choice = input("Enter query:")
 
-            results = {"data": [],
-                       "errors": []}
-
-            for source_name in settings["sources"]:
-                source_class = SOURCE_REGISTRY.get(source_name)
-
-                if not source_class:
-                    continue
-
-                try:
-                    instance = source_class(settings)
-                    response = instance.search(choice)
-
-                    for item in response.get("data", []):
-                        normalized_item = normalize_result(item, source_name)
-                        results["data"].append(normalized_item)
-
-                except Exception as e:
-                    results["errors"].append(f"Error with {source_name}: {e}")
-
-
-            sort_config = SORT_MAP.get(settings["sort_by"])
-            if sort_config:
-                results["data"].sort(key=sort_config["key"], reverse=sort_config["reverse"])
+            results = run_search(choice, settings)
 
             rows = []
             for item in results["data"]:
@@ -502,4 +489,3 @@ if __name__ == "__main__":
         cli_entry() 
     else:
         main_menu()
-

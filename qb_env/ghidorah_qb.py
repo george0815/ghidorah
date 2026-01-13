@@ -1,47 +1,87 @@
 import importlib.util
 import sys
 import os
-from novaprinter import get_results
+from qb_env.novaprinter import get_results
+import inspect
 
-#TODO: function that detects what qb plugins are available
-def detect_qb_plugins(  plugin_directory="engines"):
+
+
+
+def get_base_dir():
+    if getattr(sys, "frozen", False):
+        # Running as PyInstaller exe
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as normal Python script
+        return os.path.dirname(os.path.abspath(__file__))
+
+BASE_DIR = get_base_dir()
+QB_ENV_DIR = os.path.join(BASE_DIR, "qb_env")
+
+if QB_ENV_DIR not in sys.path:
+    sys.path.insert(0, QB_ENV_DIR)
+
+def detect_qb_plugins():
+    base_dir = get_base_dir()
+    engine_dir = os.path.join(base_dir, "engines")
+
+    print("QB ENV DIR2:", engine_dir)
+
+    if base_dir not in sys.path:
+        sys.path.insert(0, base_dir)
+
     plugins = {}
-    for filename in os.listdir(plugin_directory):
-        if filename.endswith(".py"):
-            module_name = os.path.splitext(filename)[0]
-            path = os.path.join(plugin_directory, filename)
 
-            spec = importlib.util.spec_from_file_location(module_name, path)
-            module = importlib.util.module_from_spec(spec)
+    if not os.path.isdir(engine_dir):
+        return plugins
 
-            sys.modules[module_name] = module
-            spec.loader.exec_module(module)
+    for filename in os.listdir(engine_dir):
+        if not filename.endswith(".py"):
+            continue
 
-            # Find plugin class
-            for obj in module.__dict__.values():
-                if hasattr(obj, "search"):
-                    plugins[module_name] = obj()
+        path = os.path.join(engine_dir, filename)
+        module_name = f"{os.path.splitext(filename)[0]}"
+
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+
+        for obj in module.__dict__.values():
+            if (
+                inspect.isclass(obj)
+                and hasattr(obj, "search")
+                and callable(obj.search)
+            ):
+                plugins[module_name] = obj()
+                break
+
     return plugins
 
-def run_qbt_plugin(path, query):
-    module_name = os.path.splitext(os.path.basename(path))[0]
 
-    spec = importlib.util.spec_from_file_location(module_name, path)
+
+
+def run_qb_plugin(plugin_path, query):
+    plugin_path = os.path.abspath(plugin_path)
+    module_name = f"qb_run_{os.path.splitext(os.path.basename(plugin_path))[0]}"
+
+    spec = importlib.util.spec_from_file_location(module_name, plugin_path)
     module = importlib.util.module_from_spec(spec)
 
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
 
-    # Find plugin class
     for obj in module.__dict__.values():
-        if hasattr(obj, "search"):
-            plugin = obj()
-            plugin.search(query)
+        if hasattr(obj, "search") and callable(obj.search):
+            obj().search(query)
             return get_results()
 
     return []
 
+
 if __name__ == "__main__":
+
+    """
     if len(sys.argv) != 3:
         print("Usage: python test.py <plugin_path> <search_query>")
         sys.exit(1)
@@ -51,6 +91,12 @@ if __name__ == "__main__":
 
     print(plugin_path, search_query)
 
-    results = run_qbt_plugin(plugin_path, search_query)
+    results = run_qb_plugin(plugin_path, search_query)
     for result in results:
-        print(result)
+        print(result)"""
+    
+    plugins = detect_qb_plugins()
+
+    for name, plugin in plugins.items():
+        print(f"plugin: {name}")
+        plugin
