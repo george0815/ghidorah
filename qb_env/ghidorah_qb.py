@@ -31,8 +31,6 @@ def detect_qb_plugins():
     base_dir = get_base_dir()
     engine_dir = os.path.join(base_dir, "engines")
 
-    print("QB ENV DIR2:", engine_dir)
-
     if base_dir not in sys.path:
         sys.path.insert(0, base_dir)
 

@@ -52,7 +52,6 @@ BASE_SOURCE_LIST = ["kickasstorrents",
 engines = detect_qb_plugins()
 
 QB_SOURCE_LIST = engines.keys()
-print("QB SOURCE LIST:", QB_SOURCE_LIST)    
 
 SOURCES = list(QB_SOURCE_LIST) + list(BASE_SOURCE_LIST)
 
@@ -146,8 +145,6 @@ def run_search(query, settings):
                 source_path = engines[source_name].__module__
                 source_file = engines[source_name].__class__.__module__
                 plugin_results = run_qb_plugin(source_name, query)
-
-                print("PLUGIN RESULTS:", plugin_results)    
 
                 for item in plugin_results:
                     normalized_item = normalize_result(item, source_name, settings["use_qb_plugins"])
