@@ -30,6 +30,50 @@ sys.stderr.reconfigure(encoding="utf-8")
 # Helper functions
 # -------------------
 
+
+def normalize_category(category: str | None) -> str:
+    """
+    Normalize custom categories to valid qBittorrent plugin categories.
+
+    Valid qB categories:
+    all, anime, books, games, movies, music, pictures, software, tv
+    """
+
+    if not category:
+        return "all"
+
+    category = category.strip().lower()
+
+    CATEGORY_MAP = {
+        "movies": "movies",
+        "movie": "movies",
+
+        "tv shows": "tv",
+        "tv": "tv",
+        "television": "tv",
+
+        "application": "software",
+        "app": "software",
+        "apps": "software",
+        "software": "software",
+
+        "games": "games",
+        "game": "games",
+
+        "music": "music",
+
+        "anime": "anime",
+        "books": "books",
+        "pictures": "pictures",
+
+        "other": "all",
+        "misc": "all",
+        "unknown": "all",
+    }
+
+    return CATEGORY_MAP.get(category, "all")
+
+
 def qb_missing(value):
     return value in (None, "", -1)
 
@@ -163,7 +207,9 @@ def run_search(query, settings):
             try:
                 source_path = engines[source_name].__module__
                 source_file = engines[source_name].__class__.__module__
-                plugin_results = run_qb_plugin(source_name, query)
+                norm_cat = normalize_category(settings["categories"][0])
+                cat = norm_cat if norm_cat in getattr(engines[source_name], "supported_categories", {"all": ""}) else "all"
+                plugin_results = run_qb_plugin(source_name, query, cat)
 
                 for item in plugin_results:
                     normalized_item = normalize_result(item, source_name, settings["use_qb_plugins"])
