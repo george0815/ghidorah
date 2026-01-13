@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 from termcolor import colored
 import json
+import re
 import argparse
 import sys
 from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
@@ -218,6 +219,13 @@ def run_search(query, settings):
             except Exception as e:
                 results["errors"].append(f"Error with {source_name}: {e}")
 
+            sort_config = SORT_MAP.get(settings["sort_by"])
+            if sort_config:
+                results["data"].sort(
+                    key=sort_config["key"],
+                    reverse=sort_config["reverse"]
+                )
+
         pass
 
     return results
@@ -317,30 +325,60 @@ def check_status(settings):
         print(f"An error occurred while checking status: {e}")
 
 
-def parse_size(size):
-    if not size or size == "N/A":
+_SIZE_RE = re.compile(
+    r"(?P<num>\d+(?:\.\d+)?)\s*(?P<unit>kib|mib|gib|tib|kb|mb|gb|tb)?",
+    re.IGNORECASE
+)
+
+_MULTIPLIERS = {
+    "kib": 1,
+    "kb": 1,
+    "mib": 1024,
+    "mb": 1024,
+    "gib": 1024 ** 2,
+    "gb": 1024 ** 2,
+    "tib": 1024 ** 3,
+    "tb": 1024 ** 3,
+}
+
+
+def parse_size(size) -> int:
+    """
+    Parse human-readable size into KiB.
+    Always returns an int. Never raises.
+    """
+
+    # Already numeric
+    if isinstance(size, (int, float)):
+        return int(size)
+
+    if not size or size in ("N/A", "-1"):
         return 0
-    
-    size = size.upper().strip()
-    number, unit = size.split()[:2]
-    number = float(number)
 
-    multipliers = {
-        "KiB": 1,
-        "MiB": 1024,
-        "GiB": 1024 ** 2,
-        "TiB": 1024 ** 3,
-        "kb": 1,
-        "mb": 1024,
-        "gb": 1024 ** 2,
-        "tb": 1024 ** 3,
-        "KB": 1,
-        "MB": 1024,
-        "GB": 1024 ** 2,
-        "TB": 1024 ** 3,
-    }
+    s = str(size).lower().strip()
 
-    return number * multipliers.get(unit, 0)
+    # Handle ranges like "7.9~8.5", "7.9 - 8.5 gb"
+    if "~" in s or "-" in s:
+        parts = re.split(r"[~-]", s)
+        for part in reversed(parts):  # prefer upper bound
+            val = parse_size(part)
+            if val > 0:
+                return val
+        return 0
+
+    match = _SIZE_RE.search(s)
+    if not match:
+        return 0
+
+    try:
+        number = float(match.group("num"))
+    except (TypeError, ValueError):
+        return 0
+
+    unit = match.group("unit")
+    multiplier = _MULTIPLIERS.get(unit, 1)
+
+    return int(number * multiplier)
     
 
 
@@ -354,13 +392,14 @@ def normalize_result(item, source_name, qb):
             if key in item and item[key] not in [None, ""]:
                 normalized[key] = item[key]
         normalized["source"] = source_name
+        normalized["size"] = parse_size(normalized["size"])
         return normalized
     
     else:
         
         return {
             "name": item.get("name") if not qb_missing(item.get("name")) else "N/A",
-            "size": item.get("size") if not qb_missing(item.get("size")) else "N/A",
+            "size": parse_size(item.get("size")) if not qb_missing(item.get("size")) else "N/A",
             "seeders": safe_int(item.get("seeds")),
             "leechers": safe_int(item.get("leech")),
             "category": "N/A",
@@ -543,6 +582,7 @@ def main_menu():
         if answer == "Search":
             
             print("Current settings:", settings)
+            print("\nIMPORTANT: if using qBittorrent plugins, the per torrent limit is ignored, and category selection is limited to one category only. Addionally, many plugins will default to \"all\". \n")
             choice = input("Enter query:")
 
             results = run_search(choice, settings)

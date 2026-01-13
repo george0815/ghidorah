@@ -68,7 +68,6 @@ ENGINE_DIR = os.path.join(BASE_DIR, "engines")
 def run_qb_plugin(plugin, query, category="all"):
     plugin_path = os.path.join(ENGINE_DIR, f"{plugin}.py")
 
-    print(plugin_path, plugin, query, category)
 
     if not os.path.isfile(plugin_path):
         raise FileNotFoundError(f"Plugin not found: {plugin_path}")
