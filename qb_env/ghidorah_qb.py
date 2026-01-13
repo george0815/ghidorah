@@ -4,7 +4,13 @@ import os
 from qb_env.novaprinter import get_results
 import inspect
 
+import sys
+import qb_env.novaprinter as _novaprinter
+import qb_env.helpers as _helpers
 
+# Force legacy plugin imports to resolve correctly
+sys.modules["novaprinter"] = _novaprinter
+sys.modules["helpers"] = _helpers
 
 
 def get_base_dir():
@@ -59,44 +65,42 @@ def detect_qb_plugins():
     return plugins
 
 
+ENGINE_DIR = os.path.join(BASE_DIR, "engines")
 
+def run_qb_plugin(plugin, query, category="all"):
+    plugin_path = os.path.join(ENGINE_DIR, f"{plugin}.py")
 
-def run_qb_plugin(plugin_path, query):
-    plugin_path = os.path.abspath(plugin_path)
-    module_name = f"qb_run_{os.path.splitext(os.path.basename(plugin_path))[0]}"
+    print(plugin_path, plugin, query, category)
 
-    spec = importlib.util.spec_from_file_location(module_name, plugin_path)
+    if not os.path.isfile(plugin_path):
+        raise FileNotFoundError(f"Plugin not found: {plugin_path}")
+
+    spec = importlib.util.spec_from_file_location(plugin, plugin_path)
     module = importlib.util.module_from_spec(spec)
-
-    sys.modules[module_name] = module
     spec.loader.exec_module(module)
 
     for obj in module.__dict__.values():
-        if hasattr(obj, "search") and callable(obj.search):
-            obj().search(query)
+        if inspect.isclass(obj) and hasattr(obj, "search"):
+            engine = obj()
+            engine.search(query, category)
             return get_results()
 
     return []
 
 
 if __name__ == "__main__":
-
-    """
-    if len(sys.argv) != 3:
-        print("Usage: python test.py <plugin_path> <search_query>")
+    if len(sys.argv) != 4:
+        print("Usage: python ghidorah_qb.py <plugin> <category> <query>")
         sys.exit(1)
 
-    plugin_path = sys.argv[1]
-    search_query = sys.argv[2]
+    plugin = sys.argv[1]
+    category = sys.argv[2]
+    query = sys.argv[3]
 
-    print(plugin_path, search_query)
+    results = run_qb_plugin(plugin, query, category)
 
-    results = run_qb_plugin(plugin_path, search_query)
-    for result in results:
-        print(result)"""
+    for r in results:
+        print(r)
     
-    plugins = detect_qb_plugins()
-
-    for name, plugin in plugins.items():
-        print(f"plugin: {name}")
-        plugin
+ 
+ 

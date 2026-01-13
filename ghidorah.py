@@ -110,7 +110,6 @@ def run_search(query, settings):
 
     if settings["use_qb_plugins"] == False:
         
-
         for source_name in settings["sources"]:
             source_class = SOURCE_REGISTRY.get(source_name)
     
@@ -137,6 +136,25 @@ def run_search(query, settings):
             )
 
     else:
+
+        for source_name in settings["sources"]:
+            if source_name not in engines:
+                continue
+
+            try:
+                source_path = engines[source_name].__module__
+                source_file = engines[source_name].__class__.__module__
+                plugin_results = run_qb_plugin(source_name, query)
+
+                print("PLUGIN RESULTS:", plugin_results)
+
+                for item in plugin_results:
+                    normalized_item = normalize_result(item, source_name)
+                    results["data"].append(normalized_item)
+
+            except Exception as e:
+                results["errors"].append(f"Error with {source_name}: {e}")
+
         pass
 
     return results
