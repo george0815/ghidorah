@@ -10,6 +10,7 @@ from tabulate import tabulate
 from colorama import Fore, init
 import contextlib
 import os
+from datetime import datetime
 from termcolor import colored
 import json
 import argparse
@@ -121,7 +122,7 @@ def run_search(query, settings):
                 response = instance.search(query)
     
                 for item in response.get("data", []):
-                    normalized_item = normalize_result(item, source_name)
+                    normalized_item = normalize_result(item, source_name, settings["use_qb_plugins"])
                     results["data"].append(normalized_item)
     
             except Exception as e:
@@ -146,10 +147,10 @@ def run_search(query, settings):
                 source_file = engines[source_name].__class__.__module__
                 plugin_results = run_qb_plugin(source_name, query)
 
-                print("PLUGIN RESULTS:", plugin_results)
+                print("PLUGIN RESULTS:", plugin_results)    
 
                 for item in plugin_results:
-                    normalized_item = normalize_result(item, source_name)
+                    normalized_item = normalize_result(item, source_name, settings["use_qb_plugins"])
                     results["data"].append(normalized_item)
 
             except Exception as e:
@@ -283,13 +284,31 @@ def parse_size(size):
 
 
 
-def normalize_result(item, source_name):
-    normalized = NORMALIZED_FIELDS.copy()
-    for key in normalized:
-        if key in item and item[key] not in [None, ""]:
-            normalized[key] = item[key]
-    normalized["source"] = source_name
-    return normalized
+def normalize_result(item, source_name, qb):
+
+    if qb == False:
+        normalized = NORMALIZED_FIELDS.copy()
+        for key in normalized:
+            if key in item and item[key] not in [None, ""]:
+                normalized[key] = item[key]
+        normalized["source"] = source_name
+        return normalized
+    
+    else:
+        
+
+        return {
+            "name": "N/A" if item.get("name", "") == -1 else item.get("name", ""),
+            "size": "N/A" if item.get("size", "N/A") == -1 else item.get("size", "N/A"),
+            "seeders": int(item.get("seeds", 0)) if str(item.get("seeds", "")).isdigit() else 0,
+            "leechers": int(item.get("leech", 0)) if str(item.get("leech", "")).isdigit() else 0,
+            "category": "N/A",
+            "source": source_name,
+            "url": item.get("engine_url", "N/A"),
+            "date": "N/A" if item.get("pub_date") == -1 else datetime.fromtimestamp(item.get("pub_date")).strftime("%m/%d/%Y"),
+            "hash": "N/A",           # not provided by qB plugins
+            "magnet": "N/A" if item.get("link", "") == -1 else item.get("link", "")
+        }
 
 
 def exit_app():
