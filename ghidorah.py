@@ -1,3 +1,4 @@
+# Ghidorah - A multi-source torrent search tool, created by George Hunter S. in Jan of 2026
 from InquirerPy import prompt
 from InquirerPy.separator import Separator
 from sources.thepiratebay import ThePirateBay

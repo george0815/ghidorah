@@ -11,6 +11,8 @@ KickassTorrents <br>
 YTS <br>
 LimeTorrent <br>
 
+Additionally, users can install and use qBittorrent plugins by placing the desired plugin file into qb_env/engines. 
+
 
 <img width="1004" height="456" alt="スクリーンショット 2026-01-03 133120" src="https://github.com/user-attachments/assets/b50b6030-4f17-4399-94e7-65048f040da8" />
 
