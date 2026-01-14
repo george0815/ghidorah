@@ -7,6 +7,7 @@ from sources.yts import YTS
 from sources.x1337 import X1337
 from sources.torrentgalaxy import TorrentGalaxy
 from tabulate import tabulate
+from qb_env.ghidorah_qb import print_path_debug
 from colorama import Fore, init
 import contextlib
 import os
@@ -325,6 +326,8 @@ def print_icon():
 
 
 def check_status(settings):
+
+    print_path_debug()
     print("Checking status...")
 
     try:
@@ -347,30 +350,33 @@ def check_status(settings):
         print(f"An error occurred while checking status: {e}")
 
 
+import re
+
 _SIZE_RE = re.compile(
-    r"(?P<num>\d+(?:\.\d+)?)\s*(?P<unit>kib|mib|gib|tib|kb|mb|gb|tb)?",
-    re.IGNORECASE
+    r"(?P<num>\d+(?:\.\d+)?)\s*(?P<unit>kib|kb|mib|mb|gib|gb|tib|tb|b)?",
+    re.IGNORECASE,
 )
 
-_MULTIPLIERS = {
-    "kib": 1,
-    "kb": 1,
-    "mib": 1024,
-    "mb": 1024,
-    "gib": 1024 ** 2,
-    "gb": 1024 ** 2,
-    "tib": 1024 ** 3,
-    "tb": 1024 ** 3,
+_MULTIPLIERS_BYTES = {
+    "b": 1,
+    "kib": 1024,
+    "kb": 1024,
+    "mib": 1024 ** 2,
+    "mb": 1024 ** 2,
+    "gib": 1024 ** 3,
+    "gb": 1024 ** 3,
+    "tib": 1024 ** 4,
+    "tb": 1024 ** 4,
 }
 
 
 def parse_size(size) -> int:
     """
-    Parse human-readable size into KiB.
+    Parse human-readable size into bytes.
     Always returns an int. Never raises.
     """
 
-    # Already numeric
+    # Already numeric → assume bytes
     if isinstance(size, (int, float)):
         return int(size)
 
@@ -397,11 +403,36 @@ def parse_size(size) -> int:
     except (TypeError, ValueError):
         return 0
 
-    unit = match.group("unit")
-    multiplier = _MULTIPLIERS.get(unit, 1)
+    unit = match.group("unit") or "b"
+    multiplier = _MULTIPLIERS_BYTES.get(unit, 1)
 
     return int(number * multiplier)
+
     
+def format_size_bytes(num_bytes: int, precision: int = 1) -> str:
+    """
+    Format a byte count into a human-readable string (binary units).
+    """
+
+    try:
+        num_bytes = float(num_bytes)
+    except (TypeError, ValueError):
+        return "0 B"
+
+    if num_bytes <= 0:
+        return "0 B"
+
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    step = 1024.0
+
+    for unit in units:
+        if num_bytes < step:
+            if unit == "B":
+                return f"{int(num_bytes)} {unit}"
+            return f"{num_bytes:.{precision}f} {unit}"
+        num_bytes /= step
+
+    return f"{num_bytes:.{precision}f} PB"
 
 
 
@@ -418,8 +449,8 @@ def normalize_result(item, source_name, qb):
         return normalized
     
     else:
-        
         return {
+            
             "name": item.get("name") if not qb_missing(item.get("name")) else "N/A",
             "size": parse_size(item.get("size")) if not qb_missing(item.get("size")) else "N/A",
             "seeders": safe_int(item.get("seeds")),
@@ -589,7 +620,7 @@ def main_menu():
             
             {
                 "type": "list",
-                "message": "Ghidorah v1.0",
+                "message": "Ghidorah v1.1",
                 "name": "main_action",              
                 "choices": [
                     "Search",
@@ -613,7 +644,7 @@ def main_menu():
             for item in results["data"]:
                 rows.append({
                     "name": truncate(item["name"], 20),
-                    "size": item["size"],
+                    "size": format_size_bytes(item["size"]),
                     "seeders": item["seeders"],
                     "leechers": item["leechers"],
                     "category": item["category"],

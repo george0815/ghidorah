@@ -24,15 +24,16 @@ ENGINE_DIR = os.path.join(QB_ENV_DIR, "engines")
 if QB_ENV_DIR not in sys.path:
     sys.path.insert(0, QB_ENV_DIR)
 
-print("=== DEBUG plugin paths ===")
-print("sys.frozen:", getattr(sys, "frozen", False))
-print("RUNTIME_ROOT:", RUNTIME_ROOT)
-print("QB_ENV_DIR:", QB_ENV_DIR, "exists:", os.path.isdir(QB_ENV_DIR))
-print("ENGINE_DIR:", ENGINE_DIR, "exists:", os.path.isdir(ENGINE_DIR))
-if os.path.isdir(ENGINE_DIR):
-    print("ENGINE FILES:", os.listdir(ENGINE_DIR))
-print("==========================")
-
+def print_path_debug():
+    print("=== DEBUG plugin paths ===")
+    print("sys.frozen:", getattr(sys, "frozen", False))
+    print("RUNTIME_ROOT:", RUNTIME_ROOT)
+    print("QB_ENV_DIR:", QB_ENV_DIR, "exists:", os.path.isdir(QB_ENV_DIR))
+    print("ENGINE_DIR:", ENGINE_DIR, "exists:", os.path.isdir(ENGINE_DIR))
+    if os.path.isdir(ENGINE_DIR):
+        print("ENGINE FILES:", os.listdir(ENGINE_DIR))
+    print("==========================")
+ 
 
 import qb_env.novaprinter as _novaprinter
 import qb_env.helpers as _helpers
