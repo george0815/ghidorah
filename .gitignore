@@ -47,3 +47,8 @@ build/ghidorah/EXE-00.toc
 build/ghidorah/base_library.zip
 build/ghidorah/Analysis-00.toc
 results.json
+qb_env/engines/thepiratebay.py
+qb_env/engines/kickasstorrents.py
+qb_env/engines/fitgirl_repacks.py
+*.pyc
+*.pyc

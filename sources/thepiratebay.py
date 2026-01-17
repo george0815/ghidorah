@@ -32,6 +32,8 @@ class ThePirateBay:
                 "Connection": "keep-alive",
             }
 
+            
+
             # response
             res = requests.get(finalUrl, headers=headers, timeout=15)
             print("URL: {} STATUS: {}".format(finalUrl, res.status_code))
@@ -45,11 +47,14 @@ class ThePirateBay:
                 row_data = table_row.find_all("td")
                 try:
                     name = row_data[1].find("a").text
+                    
                 except:
                     name = None
 
+
                 # parse actual torrent data
                 if name:
+                    
                     url = row_data[1].find("a")["href"]
                     magnet = row_data[3].find_all("a")[0]["href"]
                     size = row_data[4].text.strip()
@@ -60,11 +65,13 @@ class ThePirateBay:
                     dateUploaded = row_data[2].text
 
                     cat_check = False
+                    
                     for cat in self.settings["categories"]:
-                        if cat in category:
+                        if cat.lower() in category.lower():
                             cat_check = True
 
                     if cat_check:
+                        
                         result["data"].append(
                             {
                                 "name": name,

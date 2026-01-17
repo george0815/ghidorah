@@ -1,4 +1,5 @@
 # Ghidorah - A multi-source torrent search tool, created by George Hunter S. in Jan of 2026
+from email import parser
 from InquirerPy import prompt
 from InquirerPy.separator import Separator
 from sources.thepiratebay import ThePirateBay
@@ -258,7 +259,7 @@ def run_search(query, settings):
 def cli_entry():
  
     parser = argparse.ArgumentParser(description="Ghidorah Torrent Search CLI")
-    parser.add_argument("query", type=str, help="Search query")
+    parser.add_argument("query", nargs="?", help="Search query")
     parser.add_argument("--limit", type=int, default=2, help="Number of results per source")
     parser.add_argument("--total_limit", type=int, default=10, help="Total number of results to display")
     parser.add_argument("--categories", type=str, nargs='+', default=["Movies",
@@ -272,34 +273,97 @@ def cli_entry():
 
     parser.add_argument("--use_qb_plugins", action="store_true", help="Enable qBittorrent plugins")
 
+    parser.add_argument("--check_status", action="store_true", help="Enable qBittorrent plugins")
+
+    parser.add_argument("--check_plugins", action="store_true", help="Enable qBittorrent plugins")
+
+
     args = parser.parse_args()
 
-    settings = {
-        "limit": args.limit,
-        "total_limit": args.total_limit,
-        "categories": args.categories,
-        "sort_by": args.sort_by,
-        "use_qb_plugins": args.use_qb_plugins,
-        "sources": args.sources,
-    }
+    if args.check_status:
+        output = {
 
+            "paths": print_path_debug(),
+            "message": "Checking status...",
+            "results": [],
 
-    try:
+        }
+
         with suppress_stdout():
-            if not args.use_qb_plugins:
-                settings["sources"] = set(BASE_SOURCE_LIST) & set(args.sources)
-            else: #revise this later 
-                settings["sources"] = set(QB_SOURCE_LIST) & set(args.sources)
+            for source in [KickAssTorrents, ThePirateBay, LimeTorrents, YTS, X1337, TorrentGalaxy]:
+                try:
 
-            results = run_search(args.query, settings)
+                    settings = {
+                        "limit": 1,
+                        "total_limit": args.total_limit,
+                        "categories": args.categories,
+                        "sort_by": args.sort_by,
+                        "use_qb_plugins": args.use_qb_plugins,
+                        "sources": args.sources,
+                    }
 
-    
+                    instance = source(settings)
+                    result = instance.search("test")
 
+                    if result.get("data"):
+                        output["results"].append({
+                            "source": source.__name__,
+                            "status": "ONLINE",
+                            "results": len(result["data"])
+                        })
+                    else:
+                        output["results"].append({
+                            "source": source.__name__,
+                            "status": "OFFLINE",
+                            "results": 0
+                        })
 
-        print(json.dumps(results, ensure_ascii=False))
+                except Exception as e:
+                    output["results"].append({
+                        "source": source.__name__,
+                        "status": "ERROR",
+                        "error": str(e)
+                    })
+
+        print(json.dumps(output, ensure_ascii=False, indent=2))
         sys.exit(0)
-    except Exception as e:
-        print(f"An error occurred: {e}")
+
+
+    elif args.check_plugins:
+        print(json.dumps(list(QB_SOURCE_LIST), ensure_ascii=False))
+        sys.exit(0)
+
+    if not args.query:
+        parser.error("the following argument is required: query (unless --check-status or --check-plugins is used)")
+
+    else:
+
+        settings = {
+            "limit": args.limit,
+            "total_limit": args.total_limit,
+            "categories": args.categories,
+            "sort_by": args.sort_by,
+            "use_qb_plugins": args.use_qb_plugins,
+            "sources": args.sources,
+        }
+
+
+        try:
+            with suppress_stdout():
+                if not args.use_qb_plugins:
+                    settings["sources"] = set(BASE_SOURCE_LIST) & set(args.sources)
+                else: #revise this later 
+                    settings["sources"] = set(QB_SOURCE_LIST) & set(args.sources)
+
+                results = run_search(args.query, settings)
+
+        
+
+
+            print(json.dumps(results, ensure_ascii=False))
+            sys.exit(0)
+        except Exception as e:
+            print(f"An error occurred: {e}")
       
 
   
@@ -326,29 +390,58 @@ def print_icon():
 ⠀⠀⠀⠀⠀⠀""", 'red'))
 
 
-def check_status(settings):
+def check_status():
 
-    print_path_debug()
+    print(print_path_debug())
     print("Checking status...")
 
-    try:
-        
-        
-        if settings["use_qb_plugins"] == False:
-            for source in [KickAssTorrents, ThePirateBay, LimeTorrents, YTS, X1337, TorrentGalaxy]:
-                instance = source(settings)
-                result = instance.search("test")
-                if len(result["data"]) > 0:
-                    print(f"{source.__name__}: {Fore.GREEN}ONLINE{Fore.RESET} - {len(result['data'])} results found")
-                else:
-                    print(f"{source.__name__}: {Fore.RED}OFFLINE{Fore.RESET} - No results found")
-                    
-        else:
-            #TODO: fill this in
-            pass
-            
-    except Exception as e:
-        print(f"An error occurred while checking status: {e}")
+    settings = {
+        "limit": 1,
+        "total_limit": 10,
+        "categories": [
+            "Movies",
+            "TV Shows",
+            "Application",
+            "Games",
+            "Music",
+            "Other",
+        ],
+        "sort_by": "Source",
+        "use_qb_plugins": False,
+        "sources": SOURCES,
+    }
+
+    for source in [
+        KickAssTorrents,
+        ThePirateBay,
+        LimeTorrents,
+        YTS,
+        X1337,
+        TorrentGalaxy,
+    ]:
+        try:
+            instance = source(settings)
+            result = instance.search("test")
+
+            if len(result.get("data", [])) > 0:
+                print(
+                    f"{source.__name__}: "
+                    f"{Fore.GREEN}ONLINE{Fore.RESET} - "
+                    f"{len(result['data'])} result(s) found"
+                )
+            else:
+                print(
+                    f"{source.__name__}: "
+                    f"{Fore.RED}OFFLINE{Fore.RESET} - "
+                    f"No result(s) found"
+                )
+
+        except Exception as e:
+            print(
+                f"{source.__name__}: "
+                f"{Fore.RED}ERROR{Fore.RESET} - {e}"
+            )
+
 
 
 import re
@@ -667,7 +760,7 @@ def main_menu():
             print(colored("Results saved to JSON file 'results.json'", 'green'))
 
         elif answer == "Check status":
-            check_status(settings)
+            check_status()
 
         elif answer == "Settings":
             settings_menu(settings)
