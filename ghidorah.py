@@ -636,7 +636,7 @@ def main_menu():
         if answer == "Search":
             
             print("Current settings:", settings)
-            print("\nIMPORTANT: if using qBittorrent plugins, the per torrent limit is ignored, and category selection is limited to one category only. Addionally, many plugins will default to \"all\". \n")
+            print("\nIMPORTANT: if using qBittorrent plugins, the per torrent limit is ignored, and category selection is limited to one category only. Additionally, many plugins will default to \"all\". \n")
             choice = input("Enter query:")
 
             results = run_search(choice, settings)
