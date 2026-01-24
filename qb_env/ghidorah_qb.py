@@ -3,8 +3,9 @@ import sys
 import os
 from qb_env.novaprinter import get_results
 import inspect
+import qb_env.novaprinter as _novaprinter
+import qb_env.helpers as _helpers
 
-import sys
 
 def get_runtime_root():
     if getattr(sys, "frozen", False):
@@ -41,8 +42,7 @@ def print_path_debug() -> str:
     return "\n".join(lines)
  
 
-import qb_env.novaprinter as _novaprinter
-import qb_env.helpers as _helpers
+
 
 # Force legacy plugin imports to resolve correctly
 sys.modules["novaprinter"] = _novaprinter

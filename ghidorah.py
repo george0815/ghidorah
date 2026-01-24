@@ -1,5 +1,4 @@
 # Ghidorah - A multi-source torrent search tool, created by George Hunter S. in Jan of 2026
-from email import parser
 from InquirerPy import prompt
 from InquirerPy.separator import Separator
 from sources.thepiratebay import ThePirateBay
@@ -10,7 +9,8 @@ from sources.x1337 import X1337
 from sources.torrentgalaxy import TorrentGalaxy
 from tabulate import tabulate
 from qb_env.ghidorah_qb import print_path_debug
-from colorama import Fore, init
+from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
+from colorama import Fore
 import contextlib
 import os
 from datetime import datetime
@@ -32,7 +32,6 @@ if QB_ENV_DIR not in sys.path:
     sys.path.insert(0, QB_ENV_DIR)
 
     
-from qb_env.ghidorah_qb import detect_qb_plugins, run_qb_plugin
 
 
 
@@ -197,7 +196,7 @@ def run_search(query, settings):
         "errors": []
     }
 
-    if settings["use_qb_plugins"] == False:
+    if not settings["use_qb_plugins"]:
         
         for source_name in settings["sources"]:
             source_class = SOURCE_REGISTRY.get(source_name)
@@ -231,8 +230,6 @@ def run_search(query, settings):
                 continue
 
             try:
-                source_path = engines[source_name].__module__
-                source_file = engines[source_name].__class__.__module__
                 norm_cat = normalize_category(settings["categories"][0])
                 cat = norm_cat if norm_cat in getattr(engines[source_name], "supported_categories", {"all": ""}) else "all"
                 plugin_results = run_qb_plugin(source_name, query, cat)
@@ -444,7 +441,6 @@ def check_status():
 
 
 
-import re
 
 _SIZE_RE = re.compile(
     r"(?P<num>\d+(?:\.\d+)?)\s*(?P<unit>kib|kb|mib|mb|gib|gb|tib|tb|b)?",
@@ -533,7 +529,7 @@ def format_size_bytes(num_bytes: int, precision: int = 1) -> str:
 
 def normalize_result(item, source_name, qb):
 
-    if qb == False:
+    if not qb:
         normalized = NORMALIZED_FIELDS.copy()
         for key in normalized:
             if key in item and item[key] not in [None, ""]:

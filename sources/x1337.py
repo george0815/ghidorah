@@ -1,5 +1,4 @@
 import requests
-import re
 from bs4 import BeautifulSoup
 
 class X1337:
@@ -46,7 +45,6 @@ class X1337:
                 name = row_data[0].find_all("a")[-1].text
 
                 if name:
-                    torUrl = url + row_data[0].find_all("a")[-1]["href"]
                     list_of_urls.append(url)
                     seeders = row_data[1].text
                     leechers = row_data[2].text

@@ -48,7 +48,7 @@ class ThePirateBay:
                 try:
                     name = row_data[1].find("a").text
                     
-                except:
+                except Exception:
                     name = None
 
 

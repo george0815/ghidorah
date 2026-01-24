@@ -1,5 +1,4 @@
 import requests
-import re
 from bs4 import BeautifulSoup
 
 class TorrentGalaxy:
@@ -43,16 +42,13 @@ class TorrentGalaxy:
                 div = divs.find_all("div")
                 try:
                     name = div[4].find("a").get_text(strip=True)
-                    imdb_url = (div[4].find_all("a"))[-1]["href"]
-                except:
+                except Exception:
                     name = (div[1].find("a", class_="txlight")).find("b").text
-                    imdb_url = (div[1].find_all("a"))[-1]["href"]
-
                 if name != "":
                     try:
                         magnet = div[5].find_all("a")[1]["href"]
                         torrent = div[5].find_all("a")[0]["href"]
-                    except:
+                    except Exception:
                         magnet = div[3].find_all("a")[1]["href"]
                         torrent = div[3].find_all("a")[0]["href"]
 
@@ -62,34 +58,28 @@ class TorrentGalaxy:
 
                     try:
                         torUrl = div[4].find("a")["href"]
-                    except:
+                    except Exception:
                         torUrl = div[1].find("a", class_="txlight")["href"]
 
                     try:
                         date = div[12].get_text(strip=True)
-                    except:
+                    except Exception:
                         date = div[10].get_text(strip=True)
 
                     try:
                         seeders_leechers = div[11].find_all("b")
                         seeders = seeders_leechers[0].text
                         leechers = seeders_leechers[1].text
-                    except:
+                    except Exception:
                         seeders_leechers = div[11].find_all("b")
                         seeders = seeders_leechers[0].text
                         leechers = seeders_leechers[1].text
 
                     try:
                         uploader = (div[7].find("a")).find("span").text
-                    except:
+                    except Exception:
                         uploader = (div[5].find("a")).find("span").text
 
-                    try:
-                        category = (
-                            div[0].find("small").text.replace("&nbsp", "")
-                        ).split(":")[0]
-                    except:
-                        category = None
 
                     if "Movies" in self.settings["categories"]:
                         result["data"].append(
