@@ -1,13 +1,24 @@
 import importlib.util
 import sys
 import os
-from qb_env.novaprinter import get_results
 import inspect
+
+from qb_env.novaprinter import get_results
 import qb_env.novaprinter as _novaprinter
 import qb_env.helpers as _helpers
 
 
+# ---------------------------------------------------------------------------
+# Runtime path resolution
+# ---------------------------------------------------------------------------
+
 def get_runtime_root():
+    """
+    Determine the runtime root directory.
+
+    Handles both normal execution and frozen (PyInstaller) environments.
+    If executed from within the qb_env directory, returns its parent.
+    """
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
 
@@ -18,14 +29,26 @@ def get_runtime_root():
 
     return here
 
+
 RUNTIME_ROOT = get_runtime_root()
 QB_ENV_DIR = os.path.join(RUNTIME_ROOT, "qb_env")
 ENGINE_DIR = os.path.join(QB_ENV_DIR, "engines")
 
+# Ensure qb_env is importable at runtime
 if QB_ENV_DIR not in sys.path:
     sys.path.insert(0, QB_ENV_DIR)
 
+
+# ---------------------------------------------------------------------------
+# Debug utilities
+# ---------------------------------------------------------------------------
+
 def print_path_debug() -> str:
+    """
+    Return diagnostic information about runtime paths and environment state.
+
+    Useful for debugging frozen builds and plugin discovery issues.
+    """
     lines = []
     lines.append("==========================")
 
@@ -40,18 +63,31 @@ def print_path_debug() -> str:
     lines.append("==========================")
 
     return "\n".join(lines)
- 
 
 
+# ---------------------------------------------------------------------------
+# Legacy qBittorrent plugin compatibility
+# ---------------------------------------------------------------------------
 
 # Force legacy plugin imports to resolve correctly
 sys.modules["novaprinter"] = _novaprinter
 sys.modules["helpers"] = _helpers
 
 
-
+# ---------------------------------------------------------------------------
+# Plugin discovery
+# ---------------------------------------------------------------------------
 
 def detect_qb_plugins():
+    """
+    Detect and load available qBittorrent search plugins.
+
+    Scans the qb_env/engines directory, dynamically imports each plugin,
+    and registers any class that exposes a callable `search` method.
+
+    Returns:
+        A dictionary mapping plugin names to instantiated plugin objects.
+    """
 
     if QB_ENV_DIR not in sys.path:
         sys.path.insert(0, QB_ENV_DIR)
@@ -66,13 +102,14 @@ def detect_qb_plugins():
             continue
 
         path = os.path.join(ENGINE_DIR, filename)
-        module_name = f"{os.path.splitext(filename)[0]}"
+        module_name = os.path.splitext(filename)[0]
 
         spec = importlib.util.spec_from_file_location(module_name, path)
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
 
+        # Locate the first class with a callable search method
         for obj in module.__dict__.values():
             if (
                 inspect.isclass(obj)
@@ -85,10 +122,26 @@ def detect_qb_plugins():
     return plugins
 
 
+# ---------------------------------------------------------------------------
+# Plugin execution
+# ---------------------------------------------------------------------------
 
 def run_qb_plugin(plugin, query, category="all"):
-    plugin_path = os.path.join(ENGINE_DIR, f"{plugin}.py")
+    """
+    Execute a qBittorrent search plugin.
 
+    Loads the specified plugin module dynamically, executes its search
+    method, and retrieves normalized results from novaprinter.
+
+    Args:
+        plugin: Plugin name (without .py extension).
+        query: Search query string.
+        category: Search category (defaults to "all").
+
+    Returns:
+        A list of search results.
+    """
+    plugin_path = os.path.join(ENGINE_DIR, f"{plugin}.py")
 
     if not os.path.isfile(plugin_path):
         raise FileNotFoundError(f"Plugin not found: {plugin_path}")
@@ -106,6 +159,10 @@ def run_qb_plugin(plugin, query, category="all"):
     return []
 
 
+# ---------------------------------------------------------------------------
+# Standalone CLI entry
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python ghidorah_qb.py <plugin> <category> <query>")
@@ -119,6 +176,3 @@ if __name__ == "__main__":
 
     for r in results:
         print(r)
-    
- 
- 

@@ -1,4 +1,10 @@
-# Ghidorah - A multi-source torrent search tool, created by George Hunter S. in Jan of 2026
+"""
+Ghidorah - A multi-source torrent search tool 
+
+Author: George Hunter S.
+Created: Jan, 2026
+
+"""
 
 # ---------------------------------------------------------------------------
 # PROGRAM OVERVIEW
