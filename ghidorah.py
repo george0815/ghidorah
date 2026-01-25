@@ -544,10 +544,13 @@ def cli_entry():
                     settings["sources"] = (
                         set(BASE_SOURCE_LIST) & set(args.sources)
                     )
-                else:  # revise this later
-                    settings["sources"] = (
-                        set(QB_SOURCE_LIST) & set(args.sources)
-                    )
+                else:  
+                    if not QB_SOURCE_LIST:
+                        raise Exception("Error: The --use_qb_plugins argument was passed, but no qBittorrent plugins were found.") 
+                    else:
+                        settings["sources"] = (
+                            set(QB_SOURCE_LIST) & set(args.sources)
+                        )
 
                 results = run_search(args.query, settings)
 
@@ -860,7 +863,11 @@ def settings_menu(settings):
                     "default": settings.get("use_qb_plugins", False),
                 }
             ])
-            settings["use_qb_plugins"] = result["use_qb_plugins"]
+            if not QB_SOURCE_LIST and result["use_qb_plugins"]:
+                print("Error: No qBittorrent plugins found.")
+                settings["use_qb_plugins"] = False
+            else:
+                settings["use_qb_plugins"] = result["use_qb_plugins"]
 
         elif answer == "Categories":
             result = prompt([
