@@ -410,7 +410,7 @@ def cli_entry():
         default=[
             "Movies",
             "TV Shows",
-            "Application",
+            "Software",
             "Games",
             "Music",
             "Other",
@@ -611,7 +611,7 @@ def check_status():
         "categories": [
             "Movies",
             "TV Shows",
-            "Application",
+            "Software",
             "Games",
             "Music",
             "Other",
@@ -878,7 +878,7 @@ def settings_menu(settings):
                     "choices": [
                         "Movies",
                         "TV Shows",
-                        "Application",
+                        "Software",
                         "Games",
                         "Music",
                         "Other",
@@ -936,7 +936,7 @@ def main_menu():
         "categories": [
             "Movies",
             "TV Shows",
-            "Application",
+            "Software",
             "Games",
             "Music",
             "Other",
